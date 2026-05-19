@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Imprint &mdash; Ultimate Vienna</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="navbar__inner">
+      <a href="index.html" class="navbar__logo">Ultimate <span>Vienna</span></a>
+      <ul class="navbar__links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="teams/echo.html">Echo / Rumble</a></li>
+        <li><a href="teams/foxes.html">Foxes</a></li>
+        <li><a href="history.html">History</a></li>
+        <li><a href="imprint.html" class="active">Imprint</a></li>
+      </ul>
+      <button class="navbar__hamburger" id="hamburger" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <section class="section">
+    <h2 class="section__title">Imprint</h2>
+    <p class="section__subtitle">Legal disclosure as required by Austrian law (&sect; 5 ECG).</p>
+
+    <div class="imprint-block">
+      <h3>Club Information</h3>
+      <p>Ultimate Vienna</p>
+      <p>[Street address]</p>
+      <p>[Postal code] Vienna, Austria</p>
+    </div>
+
+    <div class="imprint-block">
+      <h3>Contact</h3>
+      <p>Email: <a href="mailto:info@ultimatevienna.at">info@ultimatevienna.at</a></p>
+    </div>
+
+    <div class="imprint-block">
+      <h3>Responsible for Content</h3>
+      <p>[Name of responsible person]</p>
+      <p>[Street address]</p>
+      <p>[Postal code] Vienna, Austria</p>
+    </div>
+
+    <div class="imprint-block">
+      <h3>Disclaimer</h3>
+      <p>The information provided on this website is for general informational purposes only. Ultimate Vienna makes no representations or warranties of any kind, express or implied, about the completeness, accuracy, reliability, or availability of the information, products, services, or related graphics contained on this website for any purpose.</p>
+    </div>
+
+    <div class="imprint-block">
+      <h3>Copyright</h3>
+      <p>All content on this website, including text, images, and other materials, is the property of Ultimate Vienna unless otherwise stated. Reproduction, distribution, or modification of any content without prior written consent is prohibited.</p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <p class="footer__copy">&copy; 2025 Ultimate Vienna</p>
+      <ul class="footer__links">
+        <li><a href="imprint.html">Imprint</a></li>
+        <li><a href="https://instagram.com/ultimatevienna" target="_blank" rel="noopener">Instagram</a></li>
+        <li><a href="mailto:info@ultimatevienna.at">Contact</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script>
+    const hamburger = document.getElementById('hamburger');
+    const navLinks = document.getElementById('nav-links');
+    hamburger.addEventListener('click', () => {
+      navLinks.classList.toggle('open');
+    });
+  </script>
+
+</body>
+</html>
