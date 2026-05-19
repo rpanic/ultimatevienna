@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  --font-heading: "DM Serif Display", Georgia, serif;
+  --font-body: "Inter", sans-serif;
+
+  --color-primary: #3a1a1a;
+  --color-accent: #b22222;
+  --color-accent-light: #d63031;
+  --color-gold: #c9a84c;
+  --color-surface: #ffffff;
+  --color-bg: #fafaf8;
+  --color-text: #2c2c2c;
+  --color-text-light: #666666;
+  --color-border: #e0ddd6;
+}
+
+/* Navbar active underline */
+.nav-link {
+  position: relative;
+  padding-bottom: 2px;
+}
+.nav-link::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--color-accent);
+  transition: width 0.25s ease;
+}
+.nav-link:hover::after,
+.nav-link.active::after {
+  width: 100%;
+}
+.nav-link.active {
+  color: var(--color-accent);
+}
+
+/* Timeline dot */
+.timeline-dot::before {
+  content: "";
+  position: absolute;
+  left: -2rem;
+  top: 6px;
+  width: 16px;
+  height: 16px;
+  background: var(--color-accent);
+  border-radius: 50%;
+  border: 3px solid var(--color-surface);
+  box-shadow: 0 0 0 2px var(--color-accent);
+}
+
+/* Team card link arrow */
+.team-link:hover {
+  gap: 0.65rem;
+}

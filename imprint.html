@@ -9,77 +9,86 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body class="font-body text-text antialiased bg-bg leading-relaxed">
 
   <!-- Navigation -->
-  <nav class="navbar">
-    <div class="navbar__inner">
-      <a href="index.html" class="navbar__logo">Ultimate <span>Vienna</span></a>
-      <ul class="navbar__links" id="nav-links">
-        <li><a href="index.html">Home</a></li>
-        <li><a href="teams/echo.html">Echo / Rumble</a></li>
-        <li><a href="teams/foxes.html">Foxes</a></li>
-        <li><a href="history.html">History</a></li>
-        <li><a href="imprint.html" class="active">Imprint</a></li>
+  <nav class="sticky top-0 z-100 bg-surface border-b border-border shadow-sm">
+    <div class="max-w-[1120px] mx-auto px-6 flex items-center justify-between h-16">
+      <a href="index.html" class="font-heading text-[1.35rem] text-primary tracking-wide">Ultimate <span class="text-accent">Vienna</span></a>
+      <ul class="hidden md:flex gap-8 list-none" id="nav-links">
+        <li><a href="index.html" class="nav-link text-text text-[.9rem] font-medium uppercase tracking-wider">Home</a></li>
+        <li><a href="teams/echo.html" class="nav-link text-text text-[.9rem] font-medium uppercase tracking-wider">Echo / Rumble</a></li>
+        <li><a href="teams/foxes.html" class="nav-link text-text text-[.9rem] font-medium uppercase tracking-wider">Foxes</a></li>
+        <li><a href="history.html" class="nav-link text-text text-[.9rem] font-medium uppercase tracking-wider">History</a></li>
+        <li><a href="imprint.html" class="nav-link active text-text text-[.9rem] font-medium uppercase tracking-wider">Imprint</a></li>
       </ul>
-      <button class="navbar__hamburger" id="hamburger" aria-label="Toggle navigation">
-        <span></span><span></span><span></span>
+      <button class="md:hidden flex flex-col gap-[5px] bg-transparent border-none cursor-pointer p-1" id="hamburger" aria-label="Toggle navigation">
+        <span class="block w-6 h-[2px] bg-primary rounded"></span>
+        <span class="block w-6 h-[2px] bg-primary rounded"></span>
+        <span class="block w-6 h-[2px] bg-primary rounded"></span>
       </button>
     </div>
+    <ul class="md:hidden flex flex-col px-6 py-6 gap-4 bg-surface border-b border-border shadow-md list-none" id="mobile-nav" style="display:none;">
+      <li><a href="index.html" class="text-text text-[.9rem] font-medium uppercase tracking-wider">Home</a></li>
+      <li><a href="teams/echo.html" class="text-text text-[.9rem] font-medium uppercase tracking-wider">Echo / Rumble</a></li>
+      <li><a href="teams/foxes.html" class="text-text text-[.9rem] font-medium uppercase tracking-wider">Foxes</a></li>
+      <li><a href="history.html" class="text-text text-[.9rem] font-medium uppercase tracking-wider">History</a></li>
+      <li><a href="imprint.html" class="text-accent text-[.9rem] font-medium uppercase tracking-wider">Imprint</a></li>
+    </ul>
   </nav>
 
   <!-- Content -->
-  <section class="section">
-    <h2 class="section__title">Imprint</h2>
-    <p class="section__subtitle">Legal disclosure as required by Austrian law (&sect; 5 ECG).</p>
+  <section class="max-w-[1120px] mx-auto px-6 py-16">
+    <h2 class="font-heading text-4xl text-primary mb-2">Imprint</h2>
+    <p class="text-text-light text-[1.05rem] mb-10">Legal disclosure as required by Austrian law (&sect; 5 ECG).</p>
 
-    <div class="imprint-block">
-      <h3>Club Information</h3>
-      <p>Ultimate Vienna</p>
-      <p>[Street address]</p>
-      <p>[Postal code] Vienna, Austria</p>
+    <div class="bg-surface rounded-lg p-8 shadow-sm mb-6">
+      <h3 class="text-[1.1rem] text-primary mb-3 pb-2 border-b border-border">Club Information</h3>
+      <p class="text-[.95rem] mb-1">Ultimate Vienna</p>
+      <p class="text-[.95rem] mb-1">[Street address]</p>
+      <p class="text-[.95rem]">[Postal code] Vienna, Austria</p>
     </div>
 
-    <div class="imprint-block">
-      <h3>Contact</h3>
-      <p>Email: <a href="mailto:info@ultimatevienna.at">info@ultimatevienna.at</a></p>
+    <div class="bg-surface rounded-lg p-8 shadow-sm mb-6">
+      <h3 class="text-[1.1rem] text-primary mb-3 pb-2 border-b border-border">Contact</h3>
+      <p class="text-[.95rem]">Email: <a href="mailto:info@ultimatevienna.at" class="text-accent hover:text-accent-light transition-colors duration-250">info@ultimatevienna.at</a></p>
     </div>
 
-    <div class="imprint-block">
-      <h3>Responsible for Content</h3>
-      <p>[Name of responsible person]</p>
-      <p>[Street address]</p>
-      <p>[Postal code] Vienna, Austria</p>
+    <div class="bg-surface rounded-lg p-8 shadow-sm mb-6">
+      <h3 class="text-[1.1rem] text-primary mb-3 pb-2 border-b border-border">Responsible for Content</h3>
+      <p class="text-[.95rem] mb-1">[Name of responsible person]</p>
+      <p class="text-[.95rem] mb-1">[Street address]</p>
+      <p class="text-[.95rem]">[Postal code] Vienna, Austria</p>
     </div>
 
-    <div class="imprint-block">
-      <h3>Disclaimer</h3>
-      <p>The information provided on this website is for general informational purposes only. Ultimate Vienna makes no representations or warranties of any kind, express or implied, about the completeness, accuracy, reliability, or availability of the information, products, services, or related graphics contained on this website for any purpose.</p>
+    <div class="bg-surface rounded-lg p-8 shadow-sm mb-6">
+      <h3 class="text-[1.1rem] text-primary mb-3 pb-2 border-b border-border">Disclaimer</h3>
+      <p class="text-[.95rem]">The information provided on this website is for general informational purposes only. Ultimate Vienna makes no representations or warranties of any kind, express or implied, about the completeness, accuracy, reliability, or availability of the information, products, services, or related graphics contained on this website for any purpose.</p>
     </div>
 
-    <div class="imprint-block">
-      <h3>Copyright</h3>
-      <p>All content on this website, including text, images, and other materials, is the property of Ultimate Vienna unless otherwise stated. Reproduction, distribution, or modification of any content without prior written consent is prohibited.</p>
+    <div class="bg-surface rounded-lg p-8 shadow-sm mb-6">
+      <h3 class="text-[1.1rem] text-primary mb-3 pb-2 border-b border-border">Copyright</h3>
+      <p class="text-[.95rem]">All content on this website, including text, images, and other materials, is the property of Ultimate Vienna unless otherwise stated. Reproduction, distribution, or modification of any content without prior written consent is prohibited.</p>
     </div>
   </section>
 
   <!-- Footer -->
-  <footer class="footer">
-    <div class="footer__inner">
-      <p class="footer__copy">&copy; 2025 Ultimate Vienna</p>
-      <ul class="footer__links">
-        <li><a href="imprint.html">Imprint</a></li>
-        <li><a href="https://instagram.com/ultimatevienna" target="_blank" rel="noopener">Instagram</a></li>
-        <li><a href="mailto:info@ultimatevienna.at">Contact</a></li>
+  <footer class="bg-primary text-white/70 py-10 px-6 mt-8">
+    <div class="max-w-[1120px] mx-auto flex flex-wrap justify-between items-center gap-4">
+      <p class="text-[.85rem]">&copy; 2025 Ultimate Vienna</p>
+      <ul class="flex gap-6 list-none">
+        <li><a href="imprint.html" class="text-white/70 text-[.85rem] hover:text-gold transition-colors duration-250">Imprint</a></li>
+        <li><a href="https://instagram.com/ultimatevienna" target="_blank" rel="noopener" class="text-white/70 text-[.85rem] hover:text-gold transition-colors duration-250">Instagram</a></li>
+        <li><a href="mailto:info@ultimatevienna.at" class="text-white/70 text-[.85rem] hover:text-gold transition-colors duration-250">Contact</a></li>
       </ul>
     </div>
   </footer>
 
   <script>
     const hamburger = document.getElementById('hamburger');
-    const navLinks = document.getElementById('nav-links');
+    const mobileNav = document.getElementById('mobile-nav');
     hamburger.addEventListener('click', () => {
-      navLinks.classList.toggle('open');
+      mobileNav.style.display = mobileNav.style.display === 'none' ? 'flex' : 'none';
     });
   </script>
 

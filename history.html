@@ -9,78 +9,90 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body class="font-body text-text antialiased bg-bg leading-relaxed">
 
   <!-- Navigation -->
-  <nav class="navbar">
-    <div class="navbar__inner">
-      <a href="index.html" class="navbar__logo">Ultimate <span>Vienna</span></a>
-      <ul class="navbar__links" id="nav-links">
-        <li><a href="index.html">Home</a></li>
-        <li><a href="teams/echo.html">Echo / Rumble</a></li>
-        <li><a href="teams/foxes.html">Foxes</a></li>
-        <li><a href="history.html" class="active">History</a></li>
-        <li><a href="imprint.html">Imprint</a></li>
+  <nav class="sticky top-0 z-100 bg-surface border-b border-border shadow-sm">
+    <div class="max-w-[1120px] mx-auto px-6 flex items-center justify-between h-16">
+      <a href="index.html" class="font-heading text-[1.35rem] text-primary tracking-wide">Ultimate <span class="text-accent">Vienna</span></a>
+      <ul class="hidden md:flex gap-8 list-none" id="nav-links">
+        <li><a href="index.html" class="nav-link text-text text-[.9rem] font-medium uppercase tracking-wider">Home</a></li>
+        <li><a href="teams/echo.html" class="nav-link text-text text-[.9rem] font-medium uppercase tracking-wider">Echo / Rumble</a></li>
+        <li><a href="teams/foxes.html" class="nav-link text-text text-[.9rem] font-medium uppercase tracking-wider">Foxes</a></li>
+        <li><a href="history.html" class="nav-link active text-text text-[.9rem] font-medium uppercase tracking-wider">History</a></li>
+        <li><a href="imprint.html" class="nav-link text-text text-[.9rem] font-medium uppercase tracking-wider">Imprint</a></li>
       </ul>
-      <button class="navbar__hamburger" id="hamburger" aria-label="Toggle navigation">
-        <span></span><span></span><span></span>
+      <button class="md:hidden flex flex-col gap-[5px] bg-transparent border-none cursor-pointer p-1" id="hamburger" aria-label="Toggle navigation">
+        <span class="block w-6 h-[2px] bg-primary rounded"></span>
+        <span class="block w-6 h-[2px] bg-primary rounded"></span>
+        <span class="block w-6 h-[2px] bg-primary rounded"></span>
       </button>
     </div>
+    <ul class="md:hidden flex flex-col px-6 py-6 gap-4 bg-surface border-b border-border shadow-md list-none" id="mobile-nav" style="display:none;">
+      <li><a href="index.html" class="text-text text-[.9rem] font-medium uppercase tracking-wider">Home</a></li>
+      <li><a href="teams/echo.html" class="text-text text-[.9rem] font-medium uppercase tracking-wider">Echo / Rumble</a></li>
+      <li><a href="teams/foxes.html" class="text-text text-[.9rem] font-medium uppercase tracking-wider">Foxes</a></li>
+      <li><a href="history.html" class="text-accent text-[.9rem] font-medium uppercase tracking-wider">History</a></li>
+      <li><a href="imprint.html" class="text-text text-[.9rem] font-medium uppercase tracking-wider">Imprint</a></li>
+    </ul>
   </nav>
 
   <!-- Content -->
-  <section class="section">
-    <h2 class="section__title">Our History</h2>
-    <p class="section__subtitle">From a handful of players to a club that calls Vienna home.</p>
+  <section class="max-w-[1120px] mx-auto px-6 py-16">
+    <h2 class="font-heading text-4xl text-primary mb-2">Our History</h2>
+    <p class="text-text-light text-[1.05rem] mb-10">From a handful of players to a club that calls Vienna home.</p>
 
-    <div class="timeline">
-      <div class="timeline__item">
-        <div class="timeline__year">The Beginning</div>
-        <div class="timeline__text">
+    <div class="relative pl-8 mt-8">
+      <!-- Timeline line -->
+      <div class="absolute left-[7px] top-0 bottom-0 w-[2px] bg-border"></div>
+
+      <div class="relative mb-10 timeline-dot">
+        <h3 class="font-heading text-[1.3rem] text-primary mb-1">The Beginning</h3>
+        <p class="text-text-light text-[.95rem] leading-relaxed">
           Ultimate Vienna was founded by a group of ultimate enthusiasts who saw the need for a dedicated club in Austria&rsquo;s capital. What started as informal throw sessions in the park quickly grew into organised practices and a shared vision: to build a club that could compete at the highest level while staying true to the spirit of the game.
-        </div>
+        </p>
       </div>
 
-      <div class="timeline__item">
-        <div class="timeline__year">Building Echo</div>
-        <div class="timeline__text">
+      <div class="relative mb-10 timeline-dot">
+        <h3 class="font-heading text-[1.3rem] text-primary mb-1">Building Echo</h3>
+        <p class="text-text-light text-[.95rem] leading-relaxed">
           The men&rsquo;s open team &mdash; Echo &mdash; was the club&rsquo;s first competitive squad. With a focus on structured offence and disciplined defence, Echo made its mark at national and regional tournaments. Over time, a development squad &mdash; Rumble &mdash; was formed alongside Echo to give newer players a pathway into competitive play.
-        </div>
+        </p>
       </div>
 
-      <div class="timeline__item">
-        <div class="timeline__year">Growing with Foxes</div>
-        <div class="timeline__text">
+      <div class="relative mb-10 timeline-dot">
+        <h3 class="font-heading text-[1.3rem] text-primary mb-1">Growing with Foxes</h3>
+        <p class="text-text-light text-[.95rem] leading-relaxed">
           Recognising that the future of the sport depends on the next generation, Ultimate Vienna launched the Foxes &mdash; its youth programme. The Foxes brought young players into the ultimate community, teaching fundamentals and fostering a love for the game in a supportive environment.
-        </div>
+        </p>
       </div>
 
-      <div class="timeline__item">
-        <div class="timeline__year">Today</div>
-        <div class="timeline__text">
+      <div class="relative mb-10 timeline-dot">
+        <h3 class="font-heading text-[1.3rem] text-primary mb-1">Today</h3>
+        <p class="text-text-light text-[.95rem] leading-relaxed">
           Ultimate Vienna continues to grow, with both Echo/Rumble and the Foxes training and competing year-round. The club remains committed to its founding principles: competitive excellence, inclusive community, and unwavering spirit of the game. New players are always welcome &mdash; whether you&rsquo;re picking up a disc for the first time or bringing years of experience.
-        </div>
+        </p>
       </div>
     </div>
   </section>
 
   <!-- Footer -->
-  <footer class="footer">
-    <div class="footer__inner">
-      <p class="footer__copy">&copy; 2025 Ultimate Vienna</p>
-      <ul class="footer__links">
-        <li><a href="imprint.html">Imprint</a></li>
-        <li><a href="https://instagram.com/ultimatevienna" target="_blank" rel="noopener">Instagram</a></li>
-        <li><a href="mailto:info@ultimatevienna.at">Contact</a></li>
+  <footer class="bg-primary text-white/70 py-10 px-6 mt-8">
+    <div class="max-w-[1120px] mx-auto flex flex-wrap justify-between items-center gap-4">
+      <p class="text-[.85rem]">&copy; 2025 Ultimate Vienna</p>
+      <ul class="flex gap-6 list-none">
+        <li><a href="imprint.html" class="text-white/70 text-[.85rem] hover:text-gold transition-colors duration-250">Imprint</a></li>
+        <li><a href="https://instagram.com/ultimatevienna" target="_blank" rel="noopener" class="text-white/70 text-[.85rem] hover:text-gold transition-colors duration-250">Instagram</a></li>
+        <li><a href="mailto:info@ultimatevienna.at" class="text-white/70 text-[.85rem] hover:text-gold transition-colors duration-250">Contact</a></li>
       </ul>
     </div>
   </footer>
 
   <script>
     const hamburger = document.getElementById('hamburger');
-    const navLinks = document.getElementById('nav-links');
+    const mobileNav = document.getElementById('mobile-nav');
     hamburger.addEventListener('click', () => {
-      navLinks.classList.toggle('open');
+      mobileNav.style.display = mobileNav.style.display === 'none' ? 'flex' : 'none';
     });
   </script>
 
