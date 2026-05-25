@@ -267,6 +267,9 @@
   .inline-flex {
     display: inline-flex;
   }
+  .h-10 {
+    height: calc(var(--spacing) * 10);
+  }
   .h-16 {
     height: calc(var(--spacing) * 16);
   }
@@ -511,9 +514,6 @@
   }
   .text-\[1\.15rem\] {
     font-size: 1.15rem;
-  }
-  .text-\[1\.35rem\] {
-    font-size: 1.35rem;
   }
   .text-\[1rem\] {
     font-size: 1rem;
