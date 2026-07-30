@@ -1,0 +1,15 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import StatusForm from '../components/StatusForm.vue';
+---
+
+<BaseLayout title="Membership Status — Ultimate Vienna" current="status">
+  <section class="max-w-[640px] mx-auto px-6 py-16">
+    <h2 class="font-heading text-4xl text-primary mb-2">Membership status</h2>
+    <p class="text-text-light text-[1.05rem] mb-8">Enter the email you registered with and we&rsquo;ll send your membership status to that address.</p>
+
+    <div class="bg-surface rounded-lg p-7 shadow-sm border-l-4 border-accent">
+      <StatusForm client:load />
+    </div>
+  </section>
+</BaseLayout>

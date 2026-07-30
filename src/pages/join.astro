@@ -1,0 +1,15 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import JoinForm from '../components/JoinForm.vue';
+---
+
+<BaseLayout title="Join — Ultimate Vienna" current="join">
+  <section class="max-w-[640px] mx-auto px-6 py-16">
+    <h2 class="font-heading text-4xl text-primary mb-2">Join the club</h2>
+    <p class="text-text-light text-[1.05rem] mb-8">Fill in your details and we&rsquo;ll get you started. Fields marked with * are required.</p>
+
+    <div class="bg-surface rounded-lg p-7 shadow-sm border-l-4 border-accent">
+      <JoinForm client:load />
+    </div>
+  </section>
+</BaseLayout>

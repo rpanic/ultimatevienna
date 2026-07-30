@@ -1,17 +1,23 @@
 {
   "name": "uvie",
   "version": "1.0.0",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "build": "npx @tailwindcss/cli -i src/input.css -o css/style.css",
-    "watch": "npx @tailwindcss/cli -i src/input.css -o css/style.css --watch"
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Ultimate Vienna club site",
   "dependencies": {
-    "@tailwindcss/cli": "^4.3.0",
-    "tailwindcss": "^4.3.0"
+    "@astrojs/node": "^9.5.0",
+    "@astrojs/vue": "^5.1.0",
+    "@tailwindcss/vite": "^4.3.0",
+    "astro": "^5.18.0",
+    "tailwindcss": "^4.3.0",
+    "vue": "^3.5.0"
   }
 }

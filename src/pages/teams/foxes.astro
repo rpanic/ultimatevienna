@@ -1,45 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Foxes &mdash; Ultimate Vienna</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/style.css">
-</head>
-<body class="font-body text-text antialiased bg-bg leading-relaxed">
-<div class="page-wrapper">
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
 
-  <!-- Navigation -->
-  <nav class="sticky top-0 z-100 bg-surface border-b border-border shadow-sm">
-    <div class="max-w-[1120px] mx-auto px-6 flex items-center justify-between h-16">
-      <a href="../index.html"><img src="../images/uvie_header.png" alt="Ultimate Vienna" class="h-10"></a>
-      <ul class="hidden md:flex gap-8 list-none" id="nav-links">
-        <li><a href="../index.html" class="nav-link text-text text-[.9rem] font-medium uppercase tracking-wider">Home</a></li>
-        <li><a href="echo.html" class="nav-link text-text text-[.9rem] font-medium uppercase tracking-wider">Echo / Rumble</a></li>
-        <li><a href="foxes.html" class="nav-link active text-text text-[.9rem] font-medium uppercase tracking-wider">Foxes</a></li>
-        <li><a href="../imprint.html" class="nav-link text-text text-[.9rem] font-medium uppercase tracking-wider">Imprint</a></li>
-      </ul>
-      <button class="md:hidden flex flex-col gap-[5px] bg-transparent border-none cursor-pointer p-1" id="hamburger" aria-label="Toggle navigation">
-        <span class="block w-6 h-[2px] bg-primary rounded"></span>
-        <span class="block w-6 h-[2px] bg-primary rounded"></span>
-        <span class="block w-6 h-[2px] bg-primary rounded"></span>
-      </button>
-    </div>
-    <ul class="md:hidden flex flex-col px-6 py-6 gap-4 bg-surface border-b border-border shadow-md list-none" id="mobile-nav" style="display:none;">
-      <li><a href="../index.html" class="text-text text-[.9rem] font-medium uppercase tracking-wider">Home</a></li>
-      <li><a href="echo.html" class="text-text text-[.9rem] font-medium uppercase tracking-wider">Echo / Rumble</a></li>
-      <li><a href="foxes.html" class="text-accent text-[.9rem] font-medium uppercase tracking-wider">Foxes</a></li>
-      <li><a href="../imprint.html" class="text-text text-[.9rem] font-medium uppercase tracking-wider">Imprint</a></li>
-    </ul>
-  </nav>
-
-  <main>
+<BaseLayout title="Foxes — Ultimate Vienna" current="foxes">
   <!-- Hero -->
   <section class="relative min-h-[340px] flex items-end overflow-hidden bg-primary">
-    <div class="absolute inset-0 bg-cover bg-center opacity-30" style="background-image: url('../images/foxes.jpg');"></div>
+    <div class="absolute inset-0 bg-cover bg-center opacity-30" style="background-image: url('/images/foxes.jpg');"></div>
     <div class="relative z-1 max-w-[1120px] w-full mx-auto px-6 py-12">
       <span class="inline-block text-[.7rem] font-semibold uppercase tracking-widest bg-gold text-primary px-3 py-1 rounded mb-3">Youth</span>
       <h1 class="font-heading text-[2.5rem] text-white mb-1">Foxes</h1>
@@ -84,29 +50,4 @@
       </a>
     </div>
   </section>
-  </main>
-
-  <!-- Footer -->
-  <footer class="bg-primary text-white/70 py-10 px-6 mt-8">
-    <div class="max-w-[1120px] mx-auto flex flex-wrap justify-between items-center gap-4">
-      <div class="flex items-center gap-4">
-        <img src="../images/sportunion-light.png" alt="Sportunion" class="h-10">
-        <p class="text-[.85rem]">&copy; 2026 Ultimate Vienna</p>
-      </div>
-      <ul class="flex gap-6 list-none">
-        <li><a href="../imprint.html" class="text-white/70 text-[.85rem] hover:text-gold transition-colors duration-250">Imprint</a></li>
-      </ul>
-    </div>
-  </footer>
-
-</div>
-  <script>
-    const hamburger = document.getElementById('hamburger');
-    const mobileNav = document.getElementById('mobile-nav');
-    hamburger.addEventListener('click', () => {
-      mobileNav.style.display = mobileNav.style.display === 'none' ? 'flex' : 'none';
-    });
-  </script>
-
-</body>
-</html>
+</BaseLayout>

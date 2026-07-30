@@ -1,0 +1,58 @@
+---
+export type NavKey = 'home' | 'echo' | 'foxes' | 'imprint' | 'join' | 'status';
+
+interface Props {
+  current?: NavKey;
+}
+
+const { current } = Astro.props;
+
+const links: { key: NavKey; href: string; label: string }[] = [
+  { key: 'home', href: '/', label: 'Home' },
+  { key: 'echo', href: '/teams/echo', label: 'Echo / Rumble' },
+  { key: 'foxes', href: '/teams/foxes', label: 'Foxes' },
+  { key: 'join', href: '/join', label: 'Join' },
+  { key: 'status', href: '/status', label: 'Status' },
+  { key: 'imprint', href: '/imprint', label: 'Imprint' },
+];
+---
+
+<nav class="sticky top-0 z-100 bg-surface border-b border-border shadow-sm">
+  <div class="max-w-[1120px] mx-auto px-6 flex items-center justify-between h-16">
+    <a href="/"><img src="/images/uvie_header.png" alt="Ultimate Vienna" class="h-10"></a>
+    <ul class="hidden md:flex gap-8 list-none" id="nav-links">
+      {links.map((l) => (
+        <li>
+          <a
+            href={l.href}
+            class:list={['nav-link text-text text-[.9rem] font-medium uppercase tracking-wider', { active: current === l.key }]}
+          >{l.label}</a>
+        </li>
+      ))}
+    </ul>
+    <button class="md:hidden flex flex-col gap-[5px] bg-transparent border-none cursor-pointer p-1" id="hamburger" aria-label="Toggle navigation">
+      <span class="block w-6 h-[2px] bg-primary rounded"></span>
+      <span class="block w-6 h-[2px] bg-primary rounded"></span>
+      <span class="block w-6 h-[2px] bg-primary rounded"></span>
+    </button>
+  </div>
+  <ul class="md:hidden flex flex-col px-6 py-6 gap-4 bg-surface border-b border-border shadow-md list-none" id="mobile-nav" style="display:none;">
+    {links.map((l) => (
+      <li>
+        <a
+          href={l.href}
+          class:list={['text-[.9rem] font-medium uppercase tracking-wider', current === l.key ? 'text-accent' : 'text-text']}
+        >{l.label}</a>
+      </li>
+    ))}
+  </ul>
+</nav>
+
+<script>
+  const hamburger = document.getElementById('hamburger');
+  const mobileNav = document.getElementById('mobile-nav');
+  hamburger?.addEventListener('click', () => {
+    if (!mobileNav) return;
+    mobileNav.style.display = mobileNav.style.display === 'none' ? 'flex' : 'none';
+  });
+</script>
