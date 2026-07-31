@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
-import { submitStatus, isValidEmail } from '../lib/api';
+import { actions } from 'astro:actions';
+import { isValidEmail } from '../lib/api';
 
 const form = reactive({ email: '' });
 const status = ref<'idle' | 'loading' | 'done'>('idle');
@@ -15,10 +16,10 @@ async function onSubmit() {
 
   status.value = 'loading';
   try {
-    // The response is intentionally ignored: the backend emails the result
-    // to the address owner and we show the same message regardless of outcome,
+    // The response is intentionally ignored: the backend emails the result to
+    // the address owner and we show the same message regardless of outcome,
     // so the page cannot be used to enumerate who is a member.
-    await submitStatus({ email: form.email.trim() });
+    await actions.status({ email: form.email.trim() });
   } catch (e) {
     console.error(e);
   } finally {

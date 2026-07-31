@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
-import { submitOnboarding, isValidEmail, type OnboardingPayload } from '../lib/api';
+import { actions } from 'astro:actions';
+import { isValidEmail } from '../lib/api';
+
+const props = defineProps<{ team: 'echo' | 'foxes' }>();
 
 const form = reactive({
   firstName: '',
@@ -37,7 +40,8 @@ async function onSubmit() {
 
   status.value = 'loading';
   try {
-    const payload: OnboardingPayload = {
+    const { error } = await actions.onboarding({
+      team: props.team,
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
       email: form.email.trim(),
@@ -46,10 +50,17 @@ async function onSubmit() {
       address: form.address.trim() || undefined,
       otherClubs: form.otherClubs.trim() || undefined,
       payNationalFee: form.payNationalFee,
-    };
-    const res = await submitOnboarding(payload);
-    if (!res.ok) throw new Error(`Server responded ${res.status}`);
-    status.value = 'success';
+    });
+    if (error) {
+      status.value = 'error';
+      errorMessage.value = error.message;
+      return;
+    }
+    // The registration is now valid (written to the sheet). Send the user to
+    // the informational confirmation page, passing the first name so the
+    // welcome message can greet them personally.
+    const firstName = encodeURIComponent(form.firstName.trim());
+    window.location.assign(`/join/${props.team}/done?firstName=${firstName}`);
   } catch (e) {
     status.value = 'error';
     errorMessage.value =
@@ -108,14 +119,9 @@ async function onSubmit() {
       {{ errorMessage }}
     </div>
 
-    <div v-if="status === 'success'" class="rounded-lg bg-surface border-l-4 border-accent px-4 py-4">
-      <p class="font-semibold text-primary">Thanks &mdash; we&rsquo;ve received your registration.</p>
-      <p class="text-[.9rem] text-text-light mt-1">We&rsquo;ll be in touch by email with the next steps.</p>
-    </div>
-
     <button
       type="submit"
-      :disabled="status === 'loading' || status === 'success'"
+      :disabled="status === 'loading'"
       class="inline-flex items-center justify-center px-6 py-[.65rem] rounded-lg font-semibold text-[.9rem] bg-accent text-white hover:bg-accent-light transition-colors duration-250 disabled:opacity-60 disabled:cursor-not-allowed"
     >
       {{ status === 'loading' ? 'Submitting…' : 'Submit registration' }}
