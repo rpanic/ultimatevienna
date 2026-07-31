@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import JoinForm from '../../components/JoinForm.vue';
+import MembershipFeeCard from "../../components/MembershipFeeCard.astro";
 
 export const prerender = true;
 
@@ -31,7 +32,26 @@ const { title, heading } = Astro.props;
                 </div>
       }
 
-    <div class="bg-surface rounded-lg p-7 shadow-sm border-l-4 border-accent">
+    {team === "echo" ?
+      <!-- Membership Fee -->
+      <MembershipFeeCard
+              amount="&euro; 190 / year"
+              amount2="+ &euro; 30 / year Kooperationsystem fee"
+              amount3="+ &euro; 20 / year ÖUV national association fee"
+              description="Includes all training sessions over the entire season."
+              class="my-8"
+      />
+      :
+            <MembershipFeeCard
+                    accent="gold"
+                    amount="&euro; 150 / year"
+                    amount2="+ &euro; 20 / year ÖUV national association fee"
+                    description="Includes all training sessions over the entire year."
+                    class="my-8"
+            />
+    }
+
+    <div class:list={["bg-surface rounded-lg p-7 shadow-sm border-l-4", {'border-accent': team === 'echo', 'border-gold': team !== "echo"}]}>
       <JoinForm team={team} client:load />
     </div>
   </section>

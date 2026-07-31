@@ -36,14 +36,13 @@ const OEUV_BEITRAG = 20;
 
 const AMOUNTS = {
   foxes: 150, // Foxes yearly membership (paid to UVie)
-  echoUvie: 160, // Echo/Rumble full membership when assigned to UVie
-  echoEoefc: 160, // Echo/Rumble full membership when assigned to EÖFC
+  echoUvie: 190, // Echo/Rumble full membership when assigned to UVie
+  echoEoefc: 190, // Echo/Rumble full membership when assigned to EÖFC
   // Reduced rates for students (university / high school). The student rate
   // replaces only the main club fee; Symbiosepauschale and ÖBV are unchanged.
   // TODO: confirm the real reduced values.
-  foxesStudent: 75,
-  echoUvieStudent: 80,
-  echoEoefcStudent: 80,
+  echoUvieStudent: 130,
+  echoEoefcStudent: 130,
 };
 
 export interface BankAccount {
@@ -133,8 +132,10 @@ export async function getMembershipInfo(appendResult: AppendResult): Promise<Mem
   };
   const season = currentSeason();
 
+  const oeuvAmount = row.payNationalFee ? OEUV_BEITRAG : 0;
+
   if (row.team === 'foxes') {
-    const amount = row.student ? AMOUNTS.foxesStudent : AMOUNTS.foxes;
+    const amount = AMOUNTS.foxes + oeuvAmount;
     return {
       team: 'foxes',
       season,
@@ -144,7 +145,7 @@ export async function getMembershipInfo(appendResult: AppendResult): Promise<Mem
         {
           club: 'UVie',
           amount,
-          purpose: `Foxes Mitgliedsbeitrag ${season}${row.student ? ' (ermäßigt)' : ''}`,
+          purpose: `Foxes Mitgliedsbeitrag ${season}`,
           account: BANK_ACCOUNTS.UVie,
         },
       ],
@@ -157,10 +158,7 @@ export async function getMembershipInfo(appendResult: AppendResult): Promise<Mem
   const baseAmount = row.student
     ? (club === 'UVie' ? AMOUNTS.echoUvieStudent : AMOUNTS.echoEoefcStudent)
     : (club === 'UVie' ? AMOUNTS.echoUvie : AMOUNTS.echoEoefc);
-  let fullAmount = baseAmount;
-  if (row.payNationalFee) {
-    fullAmount += OEUV_BEITRAG;
-  }
+  let fullAmount = baseAmount + oeuvAmount;
 
   const payments: PaymentItem[] = [
     {
