@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import MembershipFeeCard from '../../components/MembershipFeeCard.astro';
 ---
 
 <BaseLayout title="Echo / Rumble — Ultimate Vienna" current="echo">
@@ -58,11 +59,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     </div>
 
     <!-- Membership Fee -->
-    <div class="bg-surface rounded-lg p-7 shadow-sm border-l-4 border-accent mt-8">
-      <h3 class="text-[1rem] font-semibold uppercase tracking-widest text-accent mb-3">Membership Fee</h3>
-      <p class="text-[.95rem]">&euro; 190 / year</p>
-      <p class="mt-2 text-[.85rem] text-text-light">Includes all training sessions for both teams over the entire season.</p>
-    </div>
+    <MembershipFeeCard
+      amount="&euro; 190 / year"
+      amount2="+ &euro; 30 / year Kooperationsystem fee"
+      amount3="+ &euro; 20 / year ÖUV national association fee"
+      description="Includes all training sessions for both teams over the entire season."
+      class="mt-8"
+    />
 
     <!-- Contact -->
     <div class="flex flex-col sm:flex-row gap-4 mt-6">

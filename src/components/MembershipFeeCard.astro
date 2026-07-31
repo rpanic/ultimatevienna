@@ -1,0 +1,30 @@
+---
+// The "Membership Fee" info card reused on the Echo/Rumble and Foxes team
+// pages. Same layout either way; only the accent color and the copy differ.
+//
+// Pass `accent="gold"` for the Foxes (youth) styling, leave it as the default
+// "accent" for Echo/Rumble. The color classes are written out as full literal
+// strings (not interpolated) so Tailwind's scanner picks them up.
+export interface Props {
+  accent?: 'accent' | 'gold';
+  amount: string;
+  description: string;
+  amount2?: string;
+  amount3?: string;
+  /** Extra wrapper classes, e.g. "mt-8" when the card sits outside a grid. */
+  class?: string;
+}
+
+const { accent = 'accent', amount, description, class: className = '', amount2, amount3, } = Astro.props;
+
+const borderColor = accent === 'gold' ? 'border-gold' : 'border-accent';
+const textColor = accent === 'gold' ? 'text-gold' : 'text-accent';
+---
+
+<div class:list={['bg-surface rounded-lg p-7 shadow-sm border-l-4', borderColor, className]}>
+  <h3 class:list={['text-[1rem] font-semibold uppercase tracking-widest mb-3', textColor]}>Membership Fee</h3>
+  <p class="text-[.95rem]">{amount}</p>
+  { amount2 && <p class="text-[.95rem]">{amount2}</p> }
+  { amount3 && <p class="text-[.95rem]">{amount3}</p> }
+  <p class="mt-2 text-[.85rem] text-text-light">{description}</p>
+</div>

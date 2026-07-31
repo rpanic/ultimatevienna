@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import MembershipFeeCard from '../../components/MembershipFeeCard.astro';
 ---
 
 <BaseLayout title="Foxes — Ultimate Vienna" current="foxes">
@@ -31,11 +32,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         </ul>
       </div>
 
-      <div class="bg-surface rounded-lg p-7 shadow-sm border-l-4 border-gold">
-        <h3 class="text-[1rem] font-semibold uppercase tracking-widest text-gold mb-3">Membership Fee</h3>
-        <p class="text-[.95rem]">&euro; 150 / year</p>
-        <p class="mt-2 text-[.85rem] text-text-light">Includes all training sessions over the entire year.</p>
-      </div>
+      <MembershipFeeCard
+        accent="gold"
+        amount="&euro; 150 / year"
+        amount2="+ &euro; 20 / year ÖUV national association fee"
+        description="Includes all training sessions over the entire year."
+      />
     </div>
 
     <!-- Contact -->
