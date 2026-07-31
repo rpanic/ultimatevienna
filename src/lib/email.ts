@@ -68,7 +68,7 @@ export async function sendEmail(
       from: MAIL_FROM,
       to,
       subject,
-      text: message,
+      html: message
     });
     if (error) {
       console.error(`[email] Resend rejected send to ${to}:`, error);

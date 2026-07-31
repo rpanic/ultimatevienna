@@ -2,6 +2,7 @@ import { defineAction, ActionError } from 'astro:actions';
 import { z } from 'astro/zod';
 import { appendMember, findMemberByEmail } from '../lib/sheets';
 import { sendEmail } from '../lib/email';
+import { getMembershipInfo, renderMembershipEmail } from "../lib/membership.ts";
 
 // Astro Actions are the backend. These are the real implementation backed by
 // the Google Sheets client in src/lib/sheets.ts.
@@ -63,9 +64,10 @@ export const server = {
           payNationalFee: input.payNationalFee,
         });
 
+        const info = await getMembershipInfo(result);
+        const email = await renderMembershipEmail(info);
 
-
-        await sendEmail(input.email, "You are successfully registered as a club member", "Ultimate Vienna Registration")
+        await sendEmail(input.email, email, "Ultimate Vienna Registration")
 
         return { ok: true };
       } catch (err) {

@@ -62,7 +62,7 @@ export function isSheetsConfigured(): boolean {
   return Boolean(SPREADSHEET_ID && CLIENT_EMAIL && PRIVATE_KEY);
 }
 
-type Club = "UVie" | "EÖFC";
+export type Club = "UVie" | "EÖFC";
 
 // Column order must match the Members header row documented above.
 const COLUMNS = [
@@ -127,13 +127,15 @@ export interface AppendResult {
   success: boolean;
   dryRun: boolean;
   club?: Club;
+  /** The member row that was (or would be) written — drives membership.ts. */
+  row?: MemberRow;
 }
 
 /** Append a new member registration as a row, with Status = "pending". */
 export async function appendMember(row: MemberRow): Promise<AppendResult> {
   if (!isSheetsConfigured()) {
     console.warn('[sheets] not configured — dry run. Would append row:', row);
-    return { success: true, dryRun: true };
+    return { success: true, dryRun: true, row };
   }
 
   const club: Club = row.team === "foxes" ? "UVie" : await getNextEchoRumbleClub();
@@ -162,7 +164,7 @@ export async function appendMember(row: MemberRow): Promise<AppendResult> {
     requestBody: { values },
   });
   console.log('[sheets] appended member row for:', row.email);
-  return { success: true, dryRun: false, club: club };
+  return { success: true, dryRun: false, club, row };
 }
 
 export interface MemberLookup {
