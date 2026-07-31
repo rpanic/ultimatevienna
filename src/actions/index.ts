@@ -3,39 +3,13 @@ import { z } from 'astro/zod';
 import { appendMember, findMemberByEmail } from '../lib/sheets';
 import { sendEmail } from '../lib/email';
 import { getMembershipInfo, renderMembershipEmail } from "../lib/membership.ts";
+import { storeResult } from '../lib/resultStore';
 
 // Astro Actions are the backend. These are the real implementation backed by
 // the Google Sheets client in src/lib/sheets.ts.
 
 const emailSchema = z.string().email().trim().toLowerCase();
 const teamSchema = z.enum(['echo', 'foxes']);
-
-// Builds the per-team welcome message shown on the post-onboarding page.
-// `firstName` (from the just-submitted registration, passed via query string)
-// personalizes the greeting; it is optional so the page still works if someone
-// lands on it without coming through the form. Edit these strings to change
-// what new members see after registering.
-type Team = 'echo' | 'foxes';
-
-function generateWelcomeMessage(team: Team, firstName?: string): { title: string; message: string } {
-  const name = firstName?.trim();
-  const greeting = name ? `Hi ${name}! ` : '';
-
-  switch (team) {
-    case 'echo':
-      return {
-        title: 'Welcome to Echo / Rumble',
-        message:
-          `${greeting}Thanks for registering! We’ll be in touch by email with the next steps. Your first practice is Monday 20:00 at KSV Rustenschacher Allee — just bring cleats and water. If you have questions before then, reach out to vorstand@ultimatevienna.net.`,
-      };
-    case 'foxes':
-      return {
-        title: 'Welcome to the Foxes',
-        message:
-          `${greeting}Thanks for registering! We’ll email you the next steps shortly. Foxes practice Wednesday 16:00–18:00 at the Trendsportzentrum Meiereistraße. Parents/guardians are welcome at the first session — bring cleats, water, and a good mood.`,
-      };
-  }
-}
 
 export const server = {
   onboarding: defineAction({
@@ -64,12 +38,18 @@ export const server = {
           payNationalFee: input.payNationalFee,
         });
 
+        // Build the membership summary once: it drives both the email and the
+        // on-screen result page (same data, same component).
         const info = await getMembershipInfo(result);
-        const email = await renderMembershipEmail(info);
+        const html = await renderMembershipEmail(info);
 
-        await sendEmail(input.email, email, "Ultimate Vienna Registration")
+        await sendEmail(input.email, html, 'Ultimate Vienna Registration');
 
-        return { ok: true };
+        // Stash the summary under an opaque token so the result page can render
+        // it without putting personal data in the URL.
+        const token = storeResult(info);
+
+        return { ok: true, token };
       } catch (err) {
         console.error('[action:onboarding] failed:', err);
         throw new ActionError({
@@ -77,18 +57,6 @@ export const server = {
           message: 'Could not submit registration. Please try again later.',
         });
       }
-    },
-  }),
-
-  welcomeMessage: defineAction({
-    input: z.object({
-      team: teamSchema,
-      firstName: z.string().trim().optional(),
-    }),
-    handler: async (input) => {
-      // Informational only — generated from the team + optional first name.
-      // Can't fail (no I/O), so no try/catch needed.
-      return generateWelcomeMessage(input.team, input.firstName);
     },
   }),
 

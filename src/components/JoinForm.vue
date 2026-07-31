@@ -40,7 +40,7 @@ async function onSubmit() {
 
   status.value = 'loading';
   try {
-    const { error } = await actions.onboarding({
+    const { data, error } = await actions.onboarding({
       team: props.team,
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
@@ -51,16 +51,15 @@ async function onSubmit() {
       otherClubs: form.otherClubs.trim() || undefined,
       payNationalFee: form.payNationalFee,
     });
-    if (error) {
+    if (error || !data) {
       status.value = 'error';
-      errorMessage.value = error.message;
+      errorMessage.value = error?.message ?? 'Something went wrong.';
       return;
     }
-    // The registration is now valid (written to the sheet). Send the user to
-    // the informational confirmation page, passing the first name so the
-    // welcome message can greet them personally.
-    const firstName = encodeURIComponent(form.firstName.trim());
-    window.location.assign(`/join/${props.team}/done?firstName=${firstName}`);
+    // Registration is valid (written to the sheet + email queued). The action
+    // returns an opaque token that lets the result page render the same
+    // membership summary that was emailed.
+    window.location.assign(`/join/${props.team}/done?t=${encodeURIComponent(data.token)}`);
   } catch (e) {
     status.value = 'error';
     errorMessage.value =
