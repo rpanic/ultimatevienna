@@ -11,10 +11,12 @@ import { google, type sheets_v4 } from 'googleapis';
 // Share the spreadsheet with the service account email (Editor) so it can
 // read and write. The Members tab must have a header row in this exact order:
 //
-//   A Timestamp | B Team | C FirstName | D LastName | E Email | F BirthDate
-//   G Phone | H Address | I OtherClubs | J PayNationalFee | K Status
+//   A Timestamp | B FirstName | C LastName | D Email | E BirthDate
+//   F Phone | G Address | H OtherClubs | I PayNationalFee | J Student | K Club | L Status
 //
-// Team values are "echo" or "foxes". When the env vars are not set, the client
+// Team values are "echo" or "foxes" (implied by the tab). Student is "yes"/"no"
+// (university / high school students pay a reduced membership fee). When the
+// env vars are not set, the client
 // runs in a "dry run" mode: it logs what it would write / look up instead of
 // contacting Google, so the site stays demoable locally without credentials.
 // In production, set the env vars.
@@ -75,6 +77,7 @@ const COLUMNS = [
   'Address',
   'OtherClubs',
   'PayNationalFee',
+  'Student',
   'Club',
   'Status',
 ] as const;
@@ -121,6 +124,8 @@ export interface MemberRow {
   address?: string;
   otherClubs?: string;
   payNationalFee: boolean;
+  /** University / high school student — pays a reduced membership fee. */
+  student: boolean;
 }
 
 export interface AppendResult {
@@ -150,6 +155,7 @@ export async function appendMember(row: MemberRow): Promise<AppendResult> {
     row.address ?? '',
     row.otherClubs ?? '',
     row.payNationalFee ? 'yes' : 'no',
+    row.student ? 'yes' : 'no',
     club,
     'pending',
   ]];

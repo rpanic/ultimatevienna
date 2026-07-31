@@ -14,6 +14,7 @@ const form = reactive({
   address: '',
   otherClubs: '',
   payNationalFee: true,
+  student: false,
 });
 
 const status = ref<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -50,6 +51,9 @@ async function onSubmit() {
       address: form.address.trim() || undefined,
       otherClubs: form.otherClubs.trim() || undefined,
       payNationalFee: form.payNationalFee,
+      // Foxes has no student discount — never send student=true for that team,
+      // even if the checkbox somehow held a stale value.
+      student: props.team === 'foxes' ? false : form.student,
     });
     if (error || !data) {
       status.value = 'error';
@@ -112,6 +116,20 @@ async function onSubmit() {
     <label class="flex items-start gap-3 cursor-pointer">
       <input v-model="form.payNationalFee" type="checkbox" class="mt-1 h-4 w-4 accent-[var(--color-accent)]"/>
       <span class="text-[.9rem] text-text">Should Ultimate Vienna pay your national club (ÖUV) fee on your behalf? Necessary to play championships. Only necessary to pay once, if other clubs already pay it for you, uncheck this.</span>
+    </label>
+
+    <label
+      v-if="props.team !== 'foxes'"
+      class="flex items-start gap-3 cursor-pointer"
+    >
+      <input
+        v-model="form.student"
+        type="checkbox"
+        class="mt-1 h-4 w-4 accent-[var(--color-accent)] disabled:opacity-50"
+      />
+      <span class="text-[.9rem] text-text">
+        I am a student (university or high school) and want to use the reduced membership fee (130€).
+      </span>
     </label>
 
     <div v-if="status === 'error'" class="rounded-lg bg-accent/10 border border-accent/30 text-accent px-4 py-3 text-[.9rem]">

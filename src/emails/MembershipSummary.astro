@@ -46,6 +46,7 @@ const NO = 'nein';
       {info.member.address && <tr><td style="padding:4px 0;color:#5b6b7a;">Adresse</td><td style="padding:4px 0;">{info.member.address}</td></tr>}
       {info.member.otherClubs && <tr><td style="padding:4px 0;color:#5b6b7a;">Andere Vereine</td><td style="padding:4px 0;">{info.member.otherClubs}</td></tr>}
       <tr><td style="padding:4px 0;color:#5b6b7a;">Nationalverband</td><td style="padding:4px 0;">UVie übernimmt die ÖBV-Gebühr: {info.member.payNationalFee ? YES : NO}</td></tr>
+      <tr><td style="padding:4px 0;color:#5b6b7a;">Student</td><td style="padding:4px 0;">{info.member.student ? 'ja (ermäßigter Beitrag)' : NO}</td></tr>
       {info.assignedClub && <tr><td style="padding:4px 0;color:#5b6b7a;">Zugewiesener Verein</td><td style="padding:4px 0;">{info.assignedClub}</td></tr>}
     </table>
 

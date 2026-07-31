@@ -23,6 +23,7 @@ export const server = {
       address: z.string().trim().optional(),
       otherClubs: z.string().trim().optional(),
       payNationalFee: z.boolean().default(false),
+      student: z.boolean().default(false),
     }),
     handler: async (input) => {
       try {
@@ -36,6 +37,7 @@ export const server = {
           address: input.address,
           otherClubs: input.otherClubs,
           payNationalFee: input.payNationalFee,
+          student: input.student,
         });
 
         // Build the membership summary once: it drives both the email and the

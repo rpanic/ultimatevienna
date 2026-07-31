@@ -17,10 +17,14 @@ import type { AppendResult, Club, MemberRow } from './sheets';
 //     (astro:render / astro:container) to turn the component into an HTML string
 //     server-side.
 //
-// Payment rules (three distinctions):
+// Payment rules. A member is on a team (Foxes or Echo/Rumble) and may be a
+// student (university / high school), which reduces the main club membership
+// fee only — the 30 € Symbiosepauschale and the optional 20 € ÖBV national fee
+// are unaffected.
 //   - Foxes:                       one payment to UVie for the Foxes amount.
-//   - Echo/Rumble, assigned UVie:  full UVie amount to UVie + 30 € Symbiosepauschale to EÖFC.
-//   - Echo/Rumble, assigned EÖFC:  full EÖFC amount to EÖFC + 30 € Symbiosepauschale to UVie.
+//   - Echo/Rumble, assigned UVie:  UVie amount to UVie + 30 € Symbiosepauschale to EÖFC.
+//   - Echo/Rumble, assigned EÖFC:  EÖFC amount to EÖFC + 30 € Symbiosepauschale to UVie.
+// Each amount has a reduced student variant.
 
 // --- Configuration ----------------------------------------------------------
 // TODO: replace the placeholder amounts (euros) and bank account details with
@@ -34,6 +38,12 @@ const AMOUNTS = {
   foxes: 150, // Foxes yearly membership (paid to UVie)
   echoUvie: 160, // Echo/Rumble full membership when assigned to UVie
   echoEoefc: 160, // Echo/Rumble full membership when assigned to EÖFC
+  // Reduced rates for students (university / high school). The student rate
+  // replaces only the main club fee; Symbiosepauschale and ÖBV are unchanged.
+  // TODO: confirm the real reduced values.
+  foxesStudent: 75,
+  echoUvieStudent: 80,
+  echoEoefcStudent: 80,
 };
 
 export interface BankAccount {
@@ -83,6 +93,8 @@ export interface MembershipInfo {
     address?: string;
     otherClubs?: string;
     payNationalFee: boolean;
+    /** University / high school student — pays a reduced membership fee. */
+    student: boolean;
   };
   /** The club the member was assigned to (echo/rumble only; foxes -> UVie). */
   assignedClub?: Club;
@@ -117,11 +129,12 @@ export async function getMembershipInfo(appendResult: AppendResult): Promise<Mem
     address: row.address,
     otherClubs: row.otherClubs,
     payNationalFee: row.payNationalFee,
+    student: row.student,
   };
   const season = currentSeason();
 
   if (row.team === 'foxes') {
-    const amount = AMOUNTS.foxes;
+    const amount = row.student ? AMOUNTS.foxesStudent : AMOUNTS.foxes;
     return {
       team: 'foxes',
       season,
@@ -131,7 +144,7 @@ export async function getMembershipInfo(appendResult: AppendResult): Promise<Mem
         {
           club: 'UVie',
           amount,
-          purpose: `Foxes Mitgliedsbeitrag ${season}`,
+          purpose: `Foxes Mitgliedsbeitrag ${season}${row.student ? ' (ermäßigt)' : ''}`,
           account: BANK_ACCOUNTS.UVie,
         },
       ],
@@ -141,8 +154,11 @@ export async function getMembershipInfo(appendResult: AppendResult): Promise<Mem
   // echo / rumble
   const club: Club = appendResult.club!;
   const other: Club = club === 'UVie' ? 'EÖFC' : 'UVie';
-  let fullAmount = club === 'UVie' ? AMOUNTS.echoUvie : AMOUNTS.echoEoefc;
-  if(appendResult.row?.payNationalFee) {
+  const baseAmount = row.student
+    ? (club === 'UVie' ? AMOUNTS.echoUvieStudent : AMOUNTS.echoEoefcStudent)
+    : (club === 'UVie' ? AMOUNTS.echoUvie : AMOUNTS.echoEoefc);
+  let fullAmount = baseAmount;
+  if (row.payNationalFee) {
     fullAmount += OEUV_BEITRAG;
   }
 
@@ -150,7 +166,7 @@ export async function getMembershipInfo(appendResult: AppendResult): Promise<Mem
     {
       club,
       amount: fullAmount,
-      purpose: `Mitgliedsbeitrag ${club} ${season}`,
+      purpose: `Mitgliedsbeitrag ${club} ${season}${row.student ? ' (ermäßigt)' : ''}`,
       account: BANK_ACCOUNTS[club],
     },
     {
