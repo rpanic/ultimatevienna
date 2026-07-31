@@ -216,8 +216,8 @@ export interface ColumnFrequency {
 export async function getNextEchoRumbleClub(): Promise<Club> {
   const counts = await countValuesByColumn("Club", "echo");
 
-  const uvie = counts.counts["UVie"];
-  const eoefc = counts.counts["EÖFC"];
+  const uvie = counts.counts["UVie"] ?? 0;
+  const eoefc = counts.counts["EÖFC"] ?? 0;
 
   return eoefc > uvie ? "UVie" : "EÖFC";
 }

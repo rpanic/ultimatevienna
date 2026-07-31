@@ -13,7 +13,7 @@ const form = reactive({
   phone: '',
   address: '',
   otherClubs: '',
-  payNationalFee: false,
+  payNationalFee: true,
 });
 
 const status = ref<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -110,8 +110,8 @@ async function onSubmit() {
     </div>
 
     <label class="flex items-start gap-3 cursor-pointer">
-      <input v-model="form.payNationalFee" type="checkbox" class="mt-1 h-4 w-4 accent-[var(--color-accent)]" />
-      <span class="text-[.9rem] text-text">Should Ultimate Vienna pay your national club fee (&Ouml;BV) on your behalf?</span>
+      <input v-model="form.payNationalFee" type="checkbox" class="mt-1 h-4 w-4 accent-[var(--color-accent)]"/>
+      <span class="text-[.9rem] text-text">Should Ultimate Vienna pay your national club (ÖUV) fee on your behalf? Necessary to play championships. Only necessary to pay once, if other clubs already pay it for you, uncheck this.</span>
     </label>
 
     <div v-if="status === 'error'" class="rounded-lg bg-accent/10 border border-accent/30 text-accent px-4 py-3 text-[.9rem]">
