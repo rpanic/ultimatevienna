@@ -105,6 +105,67 @@ function currentSeason(): string {
   return String(new Date().getFullYear());
 }
 
+export interface PaymentInput {
+  team: 'echo' | 'foxes';
+  /** The club the member is assigned to (foxes is always UVie). */
+  assignedClub: Club;
+  /** University / high school student — reduces the main club fee (echo only). */
+  student: boolean;
+  /** Whether UVie should pay the ÖBV national fee on the member's behalf. */
+  payNationalFee: boolean;
+  /** Membership year/season, e.g. "2026". */
+  season: string;
+}
+
+/**
+ * Compute the payment items a member owes. Pure (no I/O) so it can be reused
+ * anywhere — by getMembershipInfo after the sheet append, and directly by the
+ * frontend to preview amounts without round-tripping through the sheet.
+ *
+ *   - Foxes:                       one payment to UVie (Foxes amount + optional ÖBV).
+ *   - Echo/Rumble, assigned UVie:  UVie amount to UVie + 30 € Symbiosepauschale to EÖFC.
+ *   - Echo/Rumble, assigned EÖFC:   EÖFC amount to EÖFC + 30 € Symbiosepauschale to UVie.
+ *
+ * The student rate replaces only the main club fee; the Symbiosepauschale and
+ * the optional ÖBV fee are unaffected. Foxes has no student rate.
+ */
+export function buildPayments(input: PaymentInput): PaymentItem[] {
+  const oeuvAmount = input.payNationalFee ? OEUV_BEITRAG : 0;
+
+  if (input.team === 'foxes') {
+    return [
+      {
+        club: 'UVie',
+        amount: AMOUNTS.foxes + oeuvAmount,
+        purpose: `Foxes Mitgliedsbeitrag ${input.season}`,
+        account: BANK_ACCOUNTS.UVie,
+      },
+    ];
+  }
+
+  // echo / rumble
+  const club = input.assignedClub;
+  const other: Club = club === 'UVie' ? 'EÖFC' : 'UVie';
+  const baseAmount = input.student
+    ? (club === 'UVie' ? AMOUNTS.echoUvieStudent : AMOUNTS.echoEoefcStudent)
+    : (club === 'UVie' ? AMOUNTS.echoUvie : AMOUNTS.echoEoefc);
+
+  return [
+    {
+      club,
+      amount: baseAmount + oeuvAmount,
+      purpose: `Mitgliedsbeitrag ${club} ${input.season}${input.student ? ' (ermäßigt)' : ''}`,
+      account: BANK_ACCOUNTS[club],
+    },
+    {
+      club: other,
+      amount: SYMBIOSE_PAUSCHALE,
+      purpose: `Symbiosepauschale ${other} ${input.season}`,
+      account: BANK_ACCOUNTS[other],
+    },
+  ];
+}
+
 /**
  * Build the membership data object from an append result. The assigned club
  * comes from `appendResult.club`; if it's missing (e.g. a dry-run append that
@@ -132,55 +193,23 @@ export async function getMembershipInfo(appendResult: AppendResult): Promise<Mem
   };
   const season = currentSeason();
 
-  const oeuvAmount = row.payNationalFee ? OEUV_BEITRAG : 0;
-
-  if (row.team === 'foxes') {
-    const amount = AMOUNTS.foxes + oeuvAmount;
-    return {
-      team: 'foxes',
-      season,
-      member,
-      assignedClub: 'UVie',
-      payments: [
-        {
-          club: 'UVie',
-          amount,
-          purpose: `Foxes Mitgliedsbeitrag ${season}`,
-          account: BANK_ACCOUNTS.UVie,
-        },
-      ],
-    };
-  }
-
-  // echo / rumble
-  const club: Club = appendResult.club!;
-  const other: Club = club === 'UVie' ? 'EÖFC' : 'UVie';
-  const baseAmount = row.student
-    ? (club === 'UVie' ? AMOUNTS.echoUvieStudent : AMOUNTS.echoEoefcStudent)
-    : (club === 'UVie' ? AMOUNTS.echoUvie : AMOUNTS.echoEoefc);
-  let fullAmount = baseAmount + oeuvAmount;
-
-  const payments: PaymentItem[] = [
-    {
-      club,
-      amount: fullAmount,
-      purpose: `Mitgliedsbeitrag ${club} ${season}${row.student ? ' (ermäßigt)' : ''}`,
-      account: BANK_ACCOUNTS[club],
-    },
-    {
-      club: other,
-      amount: SYMBIOSE_PAUSCHALE,
-      purpose: `Symbiosepauschale ${other} ${season}`,
-      account: BANK_ACCOUNTS[other],
-    },
-  ];
+  // Foxes is always assigned to UVie; echo/rumble gets the club chosen during
+  // the sheet append (appendResult.club). All amount/purpose logic lives in
+  // buildPayments so it can be reused without the sheet round-trip.
+  const assignedClub: Club = row.team === 'foxes' ? 'UVie' : appendResult.club!;
 
   return {
-    team: 'echo',
+    team: row.team,
     season,
     member,
-    assignedClub: club,
-    payments,
+    assignedClub,
+    payments: buildPayments({
+      team: row.team,
+      assignedClub,
+      student: row.student,
+      payNationalFee: row.payNationalFee,
+      season,
+    }),
   };
 }
 

@@ -128,7 +128,7 @@ async function onSubmit() {
         class="mt-1 h-4 w-4 accent-[var(--color-accent)] disabled:opacity-50"
       />
       <span class="text-[.9rem] text-text">
-        I am a student (university or high school) and want to use the reduced membership fee (130€).
+        I am a student (university or high school, no income), under 26 years old and want to use the reduced membership fee (130€).
       </span>
     </label>
 
