@@ -52,8 +52,8 @@ const NO = 'Nein';
       {info.member.address && <tr><td style="padding:4px 0;color:#5b6b7a;">Adresse</td><td style="padding:4px 0;">{info.member.address}</td></tr>}
       {info.member.otherClubs && <tr><td style="padding:4px 0;color:#5b6b7a;">Andere Vereine</td><td style="padding:4px 0;">{info.member.otherClubs}</td></tr>}
       <tr><td style="padding:4px 0;color:#5b6b7a;">ÖUV Spielermeldung</td><td style="padding:4px 0;">{info.member.payNationalFee ? YES : NO}</td></tr>
-      <tr><td style="padding:4px 0;color:#5b6b7a;">Student</td><td style="padding:4px 0;">{info.member.student ? 'ja (ermäßigter Beitrag)' : NO}</td></tr>
-      {info.assignedClub && <tr><td style="padding:4px 0;color:#5b6b7a;">Zugewiesener Verein</td><td style="padding:4px 0;"><b>{info.assignedClub}</b></td></tr>}
+      {info.team !== "foxes" && <tr><td style="padding:4px 0;color:#5b6b7a;">Student</td><td style="padding:4px 0;">{info.member.student ? 'ja (ermäßigter Beitrag)' : NO}</td></tr>}
+      {info.assignedClub && info.team !== "foxes" && <tr><td style="padding:4px 0;color:#5b6b7a;">Zugewiesener Haupt-verein</td><td style="padding:4px 0;"><b>{info.assignedClub}</b></td></tr>}
     </table>
 
   </td></tr>
@@ -81,7 +81,6 @@ const NO = 'Nein';
               <tr><td style="padding:8px 10px;color:#5b6b7a;width:90px;">Kontoinhaber</td><td style="padding:8px 10px;">{p.account.holder}</td></tr>
               <tr><td style="padding:4px 10px;color:#5b6b7a;">IBAN</td><td style="padding:4px 10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">{p.account.iban}</td></tr>
               <tr><td style="padding:4px 10px;color:#5b6b7a;">BIC</td><td style="padding:4px 10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">{p.account.bic}</td></tr>
-              <tr><td style="padding:4px 10px;color:#5b6b7a;">Bank</td><td style="padding:4px 10px;">{p.account.bank}</td></tr>
             </table>
           </td>
         </tr>

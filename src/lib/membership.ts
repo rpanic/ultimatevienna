@@ -27,10 +27,10 @@ import type { AppendResult, Club, MemberRow } from './sheets';
 // Each amount has a reduced student variant.
 
 // --- Configuration ----------------------------------------------------------
-// TODO: replace the placeholder amounts (euros) and bank account details with
-// the real values. These are non-secret org data; kept as constants so the data
-// object and the email stay in sync. (Move to env vars if you'd rather not bake
-// them into the bundle.)
+// TODO: replace the placeholder amounts (euros) with the real values. Bank
+// account details are read from env vars (UVIE_BANK_* / EOFC_BANK_*) below —
+// see .env.example. They fall back to the placeholders so the site stays
+// demoable without the env set.
 const SYMBIOSE_PAUSCHALE = 30;
 const OEUV_BEITRAG = 20;
 
@@ -49,22 +49,38 @@ export interface BankAccount {
   holder: string;
   iban: string;
   bic: string;
-  bank: string;
 }
 
+// Read a server-side env var from import.meta.env (Vite dev / build) then
+// process.env (Node adapter in production). Bank details are non-secret org
+// data, but keeping them server-side means they never end up in the client
+// bundle — the email and result page are both server-rendered.
+function env(name: string): string | undefined {
+  const fromImport = (import.meta.env as Record<string, string | undefined>)[name];
+  if (fromImport) return fromImport;
+  if (typeof process !== 'undefined' && process.env?.[name]) return process.env[name];
+  return undefined;
+}
+
+// Bank accounts per club, read from env (UVIE_BANK_* / EOFC_BANK_*). Falls back
+// to the placeholders so the site stays demoable without the env set.
+const bankAccount = (prefix: string, fallback: BankAccount): BankAccount => ({
+  holder: env(`${prefix}_HOLDER`) ?? fallback.holder,
+  iban: env(`${prefix}_IBAN`) ?? fallback.iban,
+  bic: env(`${prefix}_BIC`) ?? fallback.bic,
+});
+
 const BANK_ACCOUNTS: Record<Club, BankAccount> = {
-  UVie: {
+  UVie: bankAccount('UVIE_BANK', {
     holder: 'Ultimate Vienna',
     iban: 'TODO IBAN',
     bic: 'TODO BIC',
-    bank: 'TODO Bank',
-  },
-  EÖFC: {
+  }),
+  EÖFC: bankAccount('EOFC_BANK', {
     holder: 'EÖFC',
     iban: 'TODO IBAN',
     bic: 'TODO BIC',
-    bank: 'TODO Bank',
-  },
+  }),
 };
 // --------------------------------------------------------------------------
 
