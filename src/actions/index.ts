@@ -1,7 +1,7 @@
 import { defineAction, ActionError } from 'astro:actions';
 import { z } from 'astro/zod';
 import { appendMember, findMemberByEmail } from '../lib/sheets';
-import { sendEmail } from '../lib/email';
+import { env, sendEmail } from '../lib/email';
 import { getMembershipInfo, renderMembershipEmail } from "../lib/membership.ts";
 import { storeResult } from '../lib/resultStore';
 
@@ -45,7 +45,10 @@ export const server = {
         const info = await getMembershipInfo(result);
         const html = await renderMembershipEmail(info);
 
-        await sendEmail(input.email, html, 'Ultimate Vienna Registration');
+        await sendEmail(input.email, { html }, 'Ultimate Vienna Registration');
+
+        const notificationEmail = env("NOTIFICATION_EMAIL")
+        await sendEmail(notificationEmail!, { text: `New member registered: ${input.firstName} ${input.lastName} (${input.email})` }, "New member registered")
 
         // Stash the summary under an opaque token so the result page can render
         // it without putting personal data in the URL.
@@ -75,7 +78,7 @@ export const server = {
         const message = lookup.found
           ? `Your Ultimate Vienna membership status is: ${lookup.status}.`
           : `We couldn't find a membership for this email address. If you believe this is a mistake, contact vorstand@ultimatevienna.at.`;
-        await sendEmail(input.email, message, 'Your Ultimate Vienna membership status');
+        await sendEmail(input.email, { text: message }, 'Your Ultimate Vienna membership status');
 
         // GDPR: always return the same shape regardless of whether the email
         // exists or whether delivery succeeded. The real status is delivered

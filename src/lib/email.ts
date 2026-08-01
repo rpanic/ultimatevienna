@@ -17,7 +17,7 @@ const MAIL_FROM = env('MAIL_FROM') ?? 'Ultimate Vienna <vorstand@ultimatevienna.
 // Read a server-side env var from import.meta.env (populated by Vite in dev
 // from .env) or process.env (populated by the host in production via the Node
 // adapter). Kept here so this module stays standalone.
-function env(name: string): string | undefined {
+export function env(name: string): string | undefined {
   const fromImport = (import.meta.env as Record<string, string | undefined>)[name];
   if (fromImport) return fromImport;
   if (typeof process !== 'undefined' && process.env?.[name]) return process.env[name];
@@ -53,7 +53,7 @@ export interface SendEmailResult {
  */
 export async function sendEmail(
   to: string,
-  message: string,
+  message: { html: string } | { text: string },
   subject = 'Ultimate Vienna',
 ): Promise<SendEmailResult> {
   if (!isEmailConfigured()) {
@@ -68,7 +68,7 @@ export async function sendEmail(
       from: MAIL_FROM,
       to,
       subject,
-      html: message
+      ...message
     });
     if (error) {
       console.error(`[email] Resend rejected send to ${to}:`, error);
