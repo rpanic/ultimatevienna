@@ -48,7 +48,7 @@ export const server = {
         await sendEmail(input.email, { html }, 'Ultimate Vienna Registration');
 
         const notificationEmail = env("NOTIFICATION_EMAIL")
-        await sendEmail(notificationEmail!, { text: `New member registered: ${input.firstName} ${input.lastName} (${input.email})` }, "New member registered")
+        await sendEmail(notificationEmail!, { text: `New member registered: ${input.firstName} ${input.lastName} (${input.email}).'\nJugend: ${input.student}, ÖUV: ${input.payNationalFee}` }, "New member registered")
 
         // Stash the summary under an opaque token so the result page can render
         // it without putting personal data in the URL.
