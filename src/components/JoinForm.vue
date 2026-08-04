@@ -15,6 +15,9 @@ const form = reactive({
   otherClubs: '',
   payNationalFee: true,
   student: false,
+  // Honeypot: hidden from humans; bots that autofill all fields trip it. The
+  // action silently no-ops when this is non-empty.
+  website: '',
 });
 
 const status = ref<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -54,6 +57,7 @@ async function onSubmit() {
       // Foxes has no student discount — never send student=true for that team,
       // even if the checkbox somehow held a stale value.
       student: props.team === 'foxes' ? false : form.student,
+      website: form.website,
     });
     if (error || !data) {
       status.value = 'error';
@@ -75,6 +79,17 @@ async function onSubmit() {
 
 <template>
   <form @submit.prevent="onSubmit" class="space-y-5" novalidate>
+    <!-- Honeypot: visually hidden, unfocusable; bots that autofill all fields trip it. -->
+    <input
+      v-model="form.website"
+      type="text"
+      name="website"
+      tabindex="-1"
+      autocomplete="off"
+      aria-hidden="true"
+      style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;"
+    />
+
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
       <div>
         <label for="firstName" class="form-label">First name *</label>

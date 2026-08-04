@@ -24,8 +24,15 @@ export const server = {
       otherClubs: z.string().trim().optional(),
       payNationalFee: z.boolean().default(false),
       student: z.boolean().default(false),
+      // Honeypot: a visually-hidden field humans leave empty. See handler.
+      website: z.string().trim().optional(),
     }),
     handler: async (input) => {
+      // Honeypot tripped → silently appear to succeed with no side effects
+      // (no sheet write, no emails) so bots get no signal and no abuse vector.
+      if (input.website) {
+        return { ok: true, token: '' };
+      }
       try {
         const result = await appendMember({
           team: input.team,
@@ -68,8 +75,15 @@ export const server = {
   status: defineAction({
     input: z.object({
       email: emailSchema,
+      // Honeypot: a visually-hidden field humans leave empty. See handler.
+      website: z.string().trim().optional(),
     }),
     handler: async (input) => {
+      // Honeypot tripped → silently appear to succeed (no lookup, no email),
+      // matching the action's usual non-leaky "sent: true" shape.
+      if (input.website) {
+        return { sent: true };
+      }
       try {
         const lookup = await findMemberByEmail(input.email);
 

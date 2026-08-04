@@ -3,7 +3,12 @@ import { reactive, ref } from 'vue';
 import { actions } from 'astro:actions';
 import { isValidEmail } from '../lib/api';
 
-const form = reactive({ email: '' });
+const form = reactive({
+  email: '',
+  // Honeypot: hidden from humans; bots that autofill all fields trip it. The
+  // action silently no-ops when this is non-empty.
+  website: '',
+});
 const status = ref<'idle' | 'loading' | 'done'>('idle');
 const invalid = ref(false);
 
@@ -19,7 +24,7 @@ async function onSubmit() {
     // The response is intentionally ignored: the backend emails the result to
     // the address owner and we show the same message regardless of outcome,
     // so the page cannot be used to enumerate who is a member.
-    await actions.status({ email: form.email.trim() });
+    await actions.status({ email: form.email.trim(), website: form.website });
   } catch (e) {
     console.error(e);
   } finally {
@@ -30,6 +35,17 @@ async function onSubmit() {
 
 <template>
   <form @submit.prevent="onSubmit" class="space-y-5" novalidate>
+    <!-- Honeypot: visually hidden, unfocusable; bots that autofill all fields trip it. -->
+    <input
+      v-model="form.website"
+      type="text"
+      name="website"
+      tabindex="-1"
+      autocomplete="off"
+      aria-hidden="true"
+      style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;"
+    />
+
     <div>
       <label for="statusEmail" class="form-label">Email</label>
       <input
