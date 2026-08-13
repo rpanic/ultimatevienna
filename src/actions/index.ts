@@ -91,7 +91,7 @@ export const server = {
         // owner. sendEmail() never throws and handles the dry-run case.
         const message = lookup.found
           ? `Your Ultimate Vienna membership status is: ${lookup.status}.`
-          : `We couldn't find a membership for this email address. If you believe this is a mistake, contact vorstand@ultimatevienna.at.`;
+          : `We couldn't find a membership for this email address. If you believe this is a mistake, contact vorstand@ultimatevienna.net.`;
         await sendEmail(input.email, { text: message }, 'Your Ultimate Vienna membership status');
 
         // GDPR: always return the same shape regardless of whether the email
