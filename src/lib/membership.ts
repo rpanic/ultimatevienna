@@ -84,15 +84,24 @@ const BANK_ACCOUNTS: Record<Club, BankAccount> = {
 };
 // --------------------------------------------------------------------------
 
+export interface PaymentLineItem {
+  /** Amount in whole euros for this component of the payment. */
+  amount: number;
+  /** What this portion covers, e.g. "Mitgliedsbeitrag UVie 2026" or "ÖUV-Spielermeldung 2026". */
+  description: string;
+}
+
 export interface PaymentItem {
   /** Which club receives this payment. */
   club: Club;
-  /** Amount in whole euros. */
+  /** Total amount to transfer — the sum of `items`. */
   amount: number;
-  /** Human-readable label, e.g. "Mitgliedsbeitrag UVie 2026". */
+  /** Headline label / recommended Verwendungszweck, e.g. "Mitgliedsbeitrag UVie 2026". */
   purpose: string;
   /** Bank account this payment goes to. */
   account: BankAccount;
+  /** The components that sum to `amount`, shown as a breakdown when there's more than one. */
+  items: PaymentLineItem[];
 }
 
 export interface MembershipInfo {
@@ -146,15 +155,28 @@ export interface PaymentInput {
  * the optional ÖBV fee are unaffected. Foxes has no student rate.
  */
 export function buildPayments(input: PaymentInput): PaymentItem[] {
-  const oeuvAmount = input.payNationalFee ? OEUV_BEITRAG : 0;
+  const season = input.season;
+  const erm = input.student ? ' (ermäßigt)' : '';
+  // The ÖUV national fee is reimbursed to the assigned club in the SAME transfer
+  // as the main membership fee, so it appears as a line item on the main payment.
+  const nationalFeeItem: PaymentLineItem = {
+    amount: OEUV_BEITRAG,
+    description: `ÖUV-Spielermeldung ${season}`,
+  };
+  const total = (items: PaymentLineItem[]) => items.reduce((sum, i) => sum + i.amount, 0);
 
   if (input.team === 'foxes') {
+    const items: PaymentLineItem[] = [
+      { amount: AMOUNTS.foxes, description: `Foxes Mitgliedsbeitrag ${season}` },
+    ];
+    if (input.payNationalFee) items.push(nationalFeeItem);
     return [
       {
         club: 'UVie',
-        amount: AMOUNTS.foxes + oeuvAmount,
-        purpose: `Foxes Mitgliedsbeitrag ${input.season}`,
+        amount: total(items),
+        purpose: `Foxes Mitgliedsbeitrag ${season}`,
         account: BANK_ACCOUNTS.UVie,
+        items,
       },
     ];
   }
@@ -166,18 +188,29 @@ export function buildPayments(input: PaymentInput): PaymentItem[] {
     ? (club === 'UVie' ? AMOUNTS.echoUvieStudent : AMOUNTS.echoEoefcStudent)
     : (club === 'UVie' ? AMOUNTS.echoUvie : AMOUNTS.echoEoefc);
 
+  const mainItems: PaymentLineItem[] = [
+    { amount: baseAmount, description: `Mitgliedsbeitrag ${club} ${season}${erm}` },
+  ];
+  if (input.payNationalFee) mainItems.push(nationalFeeItem);
+
+  const symbioseItems: PaymentLineItem[] = [
+    { amount: SYMBIOSE_PAUSCHALE, description: `Symbiosepauschale ${other} ${season}` },
+  ];
+
   return [
     {
       club,
-      amount: baseAmount + oeuvAmount,
-      purpose: `Mitgliedsbeitrag ${club} ${input.season}${input.student ? ' (ermäßigt)' : ''}`,
+      amount: total(mainItems),
+      purpose: `Mitgliedsbeitrag ${club} ${season}${erm}`,
       account: BANK_ACCOUNTS[club],
+      items: mainItems,
     },
     {
       club: other,
-      amount: SYMBIOSE_PAUSCHALE,
-      purpose: `Symbiosepauschale ${other} ${input.season}`,
+      amount: total(symbioseItems),
+      purpose: `Symbiosepauschale ${other} ${season}`,
       account: BANK_ACCOUNTS[other],
+      items: symbioseItems,
     },
   ];
 }
