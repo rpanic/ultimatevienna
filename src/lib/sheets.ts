@@ -257,3 +257,144 @@ export async function countValuesByColumn(column: string, team: "echo" | "foxes"
   }
   return { column: COLUMNS[colIndex], total, counts, dryRun };
 }
+
+// ---------------------------------------------------------------------------
+// Credit sheet: a SEPARATE spreadsheet (CREDIT_SHEET_SPREADSHEET_ID) listing
+// members' outstanding amounts owed to UVie. Column A holds names, column B
+// holds the outstanding amount (a formula — its computed value is read). On
+// registration the member's full name is looked up there; if a numeric amount
+// is found it's added as a line item to the UVie payment (see
+// membership.ts: getMembershipInfo). The same service account must have access
+// to this spreadsheet too (share it as Editor). When the env var isn't set the
+// feature is off and the lookup silently returns null — no error.
+// ---------------------------------------------------------------------------
+
+/**
+ * Canonicalize a name for order-independent matching: lowercase, split on
+ * whitespace/commas, drop empties, sort the tokens. This matches "First Last",
+ * "Last First", and "Last, First" all to the same key, so the credit sheet's
+ * formatting doesn't have to match the member's first/last order.
+ */
+function normalizeName(s: string): string {
+  return s.toLowerCase().replace(/,/g, ' ').split(/\s+/).filter(Boolean).sort().join(' ');
+}
+
+/**
+ * Parse a German-formatted amount string from a sheet cell into a number.
+ * Handles "50", "50,00", "1.234,56", "€ 50,00", "-10,00" (dot = thousands,
+ * comma = decimal). Returns null for empty or non-numeric cells.
+ */
+function parseAmount(raw: string): number | null {
+  const s = raw.trim().replace(/[^0-9,.\-]/g, '');
+  if (!s || s === '-') return null;
+  let norm = s;
+  const hasComma = s.includes(',');
+  const hasDot = s.includes('.');
+  if (hasComma && hasDot) {
+    norm = s.replace(/\./g, '').replace(',', '.'); // German: dot=thousands, comma=decimal
+  } else if (hasComma) {
+    norm = s.replace(',', '.'); // comma is the decimal separator
+  }
+  const n = parseFloat(norm);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Pure core of the credit lookup. The credit sheet is laid out TRANSPOSED:
+ *   - Row 1 (header, rows[0]): the first cell is "Guthaben", then team/section
+ *     labels ("Echo", "Rumble", "Neu/Alt/External", "EÖFC", "UVie"), with one
+ *     MEMBER NAME per column in between. Each member occupies their own column.
+ *   - Column A (rows[*][0]): row labels. The row whose label is "Guthabenstand"
+ *     holds each member's signed credit balance (deposits − their share of the
+ *     spending) — a formula, whose computed value the Sheets API returns.
+ *
+ * So to read a member's credit we find their COLUMN by matching the header row,
+ * then read the "Guthabenstand" ROW at that column. Name matching against the
+ * header is order-independent (normalizeName) so "Last First" / "Last, First"
+ * in the header still match a "First Last" lookup; amount parsing is
+ * German-formatted (parseAmount). Returns null when the sheet is empty, the
+ * name isn't in the header, there is no "Guthabenstand" row, or the balance
+ * cell has no numeric value. Extracted from getOutstandingCredit so it can be
+ * tested without the Sheets API (see sheets.test.ts).
+ */
+export function findCreditInSheet(rows: string[][], fullName: string): number | null {
+  const target = normalizeName(fullName);
+  if (!target || rows.length === 0) return null;
+
+  // 1. Find the member's column by matching the header (row 1).
+  const header = rows[0];
+  let memberCol = -1;
+  for (let c = 0; c < header.length; c++) {
+    if (normalizeName(String(header[c] ?? '')) === target) {
+      memberCol = c;
+      break;
+    }
+  }
+  if (memberCol < 0) return null;
+
+  // 2. Find the "Guthabenstand" (balance) row by its column-A label.
+  let balanceRow = -1;
+  for (let r = 0; r < rows.length; r++) {
+    if (String(rows[r][0] ?? '').trim().toLowerCase() === 'guthabenstand') {
+      balanceRow = r;
+      break;
+    }
+  }
+  if (balanceRow < 0) return null;
+
+  // 3. Parse the balance cell at [balanceRow][memberCol].
+  return parseAmount(String(rows[balanceRow]?.[memberCol] ?? ''));
+}
+
+/**
+ * Map a member's signed "Guthabenstand" balance to the outstanding debt to add
+ * to their UVie payment. The balance is (deposits − their share of spending):
+ *   - negative → the member owes UVie → return the positive debt.
+ *   - zero or positive → paid up, or UVie owes them (credit) → return null.
+ * Decided with the user: charge debts only. A prior credit is NOT applied
+ * against the membership fee — only outstanding debts are collected. Pure so
+ * it can be unit-tested (see sheets.test.ts) independently of the Sheets API.
+ */
+export function outstandingFromBalance(balance: number | null): number {
+  if (balance === null || balance >= 0) return 0;
+  return -balance;
+}
+
+/**
+ * Fetch the credit sheet's rows directly from the API. The sheet is
+ * transposed (members are columns), so this reads the FULL width (A:ZZ) — not
+ * just A:B. Returns [] when the feature is off (no CREDIT_SHEET_SPREADSHEET_ID
+ * or sheets not configured). On a real API error this throws, so a live test
+ * (see sheets.live.test.ts) surfaces auth/access failures instead of silently
+ * looking like an empty sheet. An optional `range` override is accepted for
+ * diagnostics.
+ */
+export async function fetchCreditRows(range?: string): Promise<string[][]> {
+  const creditSheetId = env('CREDIT_SHEET_SPREADSHEET_ID');
+  if (!creditSheetId || !isSheetsConfigured()) return [];
+  const tab = env('CREDIT_SHEET_TAB');
+  const resolvedRange = range ?? (tab ? `${tab}!A:ZZ` : 'A:ZZ');
+  const sheets = getClient();
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: creditSheetId, range: resolvedRange });
+  return (res.data.values ?? []) as string[][];
+}
+
+/**
+ * Look up the outstanding debt a member owes UVie by full name in the credit
+ * sheet. Returns a positive amount when the member's "Guthabenstand" balance
+ * is negative (they owe), or null when the feature is off, the name isn't
+ * found, there is no "Guthabenstand" row, the balance cell has no numeric
+ * value, or the balance is zero/positive (paid up or has credit — no debt to
+ * collect). Never throws.
+ */
+export async function getOutstandingCredit(fullName: string): Promise<number | null> {
+  if (!env('CREDIT_SHEET_SPREADSHEET_ID') || !isSheetsConfigured()) return null;
+  if (!normalizeName(fullName)) return null;
+  try {
+    const rows = await fetchCreditRows();
+    return outstandingFromBalance(findCreditInSheet(rows, fullName));
+  } catch (err) {
+    console.error('[sheets] credit lookup failed:', err);
+    return null;
+  }
+}

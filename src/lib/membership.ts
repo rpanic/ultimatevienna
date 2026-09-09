@@ -1,6 +1,6 @@
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import MembershipEmail from '../emails/MembershipEmail.astro';
-import type { AppendResult, Club, MemberRow } from './sheets';
+import { getOutstandingCredit, type AppendResult, type Club, type MemberRow } from './sheets';
 
 // Membership logic split into two functions:
 //
@@ -247,18 +247,34 @@ export async function getMembershipInfo(appendResult: AppendResult): Promise<Mem
   // buildPayments so it can be reused without the sheet round-trip.
   const assignedClub: Club = row.team === 'foxes' ? 'UVie' : appendResult.club!;
 
+  const payments = buildPayments({
+    team: row.team,
+    assignedClub,
+    student: row.student,
+    payNationalFee: row.payNationalFee,
+    season,
+  });
+
+  // Add any outstanding UVie debt (from the separate credit sheet) as a line
+  // item on the UVie payment, so the member pays it in the same transfer.
+  // getOutstandingCredit returns a positive amount only when the member owes
+  // (negative "Guthabenstand"); null means no debt, the feature is off, or the
+  // name isn't in the credit sheet.
+  const credit = await getOutstandingCredit(`${row.firstName} ${row.lastName}`);
+  if (credit !== null) {
+    const uvie = payments.find((p) => p.club === 'UVie');
+    if (uvie) {
+      uvie.items = [...uvie.items, { amount: credit, description: 'Offener Betrag UVie' }];
+      uvie.amount += credit;
+    }
+  }
+
   return {
     team: row.team,
     season,
     member,
     assignedClub,
-    payments: buildPayments({
-      team: row.team,
-      assignedClub,
-      student: row.student,
-      payNationalFee: row.payNationalFee,
-      season,
-    }),
+    payments,
   };
 }
 
