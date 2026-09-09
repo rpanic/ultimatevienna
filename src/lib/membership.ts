@@ -1,6 +1,6 @@
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import MembershipEmail from '../emails/MembershipEmail.astro';
-import { getOutstandingCredit, type AppendResult, type Club, type MemberRow } from './sheets';
+import { getDebtItems, getOutstandingCredit, type AppendResult, type Club, type DebtItem, type MemberRow } from './sheets';
 
 // Membership logic split into two functions:
 //
@@ -227,6 +227,39 @@ export function buildPayments(input: PaymentInput): PaymentItem[] {
  * didn't call getNextEchoRumbleClub), the Echo tab is tallied to pick one, so
  * the object is always complete.
  */
+/**
+ * Whether a payment line item should be dropped because it is already on the
+ * member's UVie debt (so we don't invoice it twice). Only UVie-side items:
+ *   - the UVie membership fee — the reduced (student) variant is detected by
+ *     the "(ermäßigt)" marker in the description, matched against the
+ *     reducedMembership marker, otherwise the fullMembership marker;
+ *   - the Symbiosepauschale, but ONLY when it is the one owed to UVie
+ *     (item.club === 'UVie', i.e. the member is assigned to EÖFC — the
+ *     symbiose goes to the non-assigned club);
+ *   - the ÖUV national federation fee, but ONLY when it is owed to UVie
+ *     (item.club === 'UVie', i.e. foxes or echo assigned to UVie — the fee is
+ *     paid to the assigned club, so it is on UVie's debt sheet only then).
+ * Item kind is detected from the description prefix set in buildPayments, so
+ * the Foxes fee ("Foxes Mitgliedsbeitrag …"), the EÖFC membership, the
+ * EÖFC-bound symbiose, and the EÖFC-bound ÖUV fee are never matched (not
+ * tracked in the UVie debt sheet).
+ */
+function isDebtInvoiced(item: PaymentLineItem, club: Club, debtItems: Set<DebtItem>): boolean {
+  const desc = item.description.toLowerCase();
+  if (desc.startsWith('mitgliedsbeitrag') && club === 'UVie') {
+    return desc.includes('ermäßigt')
+      ? debtItems.has('reducedMembership')
+      : debtItems.has('fullMembership');
+  }
+  if (desc.startsWith('symbiosepauschale') && club === 'UVie') {
+    return debtItems.has('symbiosepauschale');
+  }
+  if (desc.startsWith('öuv-spielermeldung') && club === 'UVie') {
+    return debtItems.has('nationalFee');
+  }
+  return false;
+}
+
 export async function getMembershipInfo(appendResult: AppendResult): Promise<MembershipInfo> {
   const row: MemberRow | undefined = appendResult.row;
   if (!row) {
@@ -285,6 +318,25 @@ export async function getMembershipInfo(appendResult: AppendResult): Promise<Mem
     payments = payments.map((p) =>
       p.club === other ? { ...p, items: [], amount: 0 } : p,
     );
+  }
+
+  // UVie debt-sheet "already invoiced" markers: the credit/debt sheet marks,
+  // per member, when their UVie full/reduced membership or Symbiosepauschale
+  // has already been added to their UVie debt — so we must not invoice it
+  // again. Drop just the matching line items (keep the card; empty cards are
+  // dropped below). Only UVie-side items are tracked: the UVie membership fee
+  // (full or reduced by student status) and the Symbiosepauschale only when
+  // it's the one owed to UVie (member assigned to EÖFC). The outstanding UVie
+  // debt added next is a separate prior amount and is never dropped here.
+  // No-op when the feature is off (no row-label env vars) — getDebtItems
+  // returns an empty set.
+  const debtItems = await getDebtItems(`${row.firstName} ${row.lastName}`);
+  if (debtItems.size > 0) {
+    payments = payments.map((p) => {
+      const items = p.items.filter((it) => !isDebtInvoiced(it, p.club, debtItems));
+      if (items.length === p.items.length) return p;
+      return { ...p, items, amount: items.reduce((s, i) => s + i.amount, 0) };
+    });
   }
 
   // Add any outstanding UVie debt (from the separate credit sheet) as a line

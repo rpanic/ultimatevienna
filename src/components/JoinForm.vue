@@ -173,7 +173,7 @@ async function onSubmit() {
       <label class="flex items-start gap-3 cursor-pointer">
         <input v-model="form.alreadyPaid" type="checkbox" class="mt-1 h-4 w-4 accent-[var(--color-accent)]" />
         <span class="text-[.9rem] text-text">
-          I've already paid this season's membership fee to a club
+          I've already paid this season's membership fee
         </span>
       </label>
       <div v-if="form.alreadyPaid && props.team !== 'foxes'" class="mt-3 max-w-[240px]">

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { findCreditInSheet, outstandingFromBalance } from './sheets';
+import { findCreditInSheet, findDebtItems, outstandingFromBalance } from './sheets';
 
 // Tests for the credit-reading core (findCreditInSheet), the pure, API-free
 // part of getOutstandingCredit. The credit sheet is TRANSPOSED: row 1 (header)
@@ -156,5 +156,133 @@ describe('outstandingFromBalance — debts only', () => {
 
   it('returns null when there is no balance at all', () => {
     expect(outstandingFromBalance(null)).toBe(0);
+  });
+});
+
+// Tests for findDebtItems — the pure, API-free core of getDebtItems. The debt
+// sheet is the same transposed layout as the credit sheet: members are columns
+// (matched against the header), and column A holds row labels. Three labelled
+// rows mark, per member, that their UVie full membership / reduced membership /
+// Symbiosepauschale is already on their debt — a cell containing the number 1
+// means "already invoiced". findDebtItems returns the set of items present.
+//
+// Fixture labels: Vollbeitrag (full), Ermäßigt (reduced), Symbiose (symbiose).
+// Member columns reuse HEADER above: C Max Mustermann, D Anna Anders,
+// F Köstler Julius.
+
+const DEBT_LABELS = {
+  fullMembership: 'Vollbeitrag',
+  reducedMembership: 'Ermäßigt',
+  symbiosepauschale: 'Symbiose',
+  nationalFee: 'ÖUV',
+};
+
+// Build a debt sheet: header + four labelled rows whose member columns (C, D,
+// F) hold the given markers (in header member order; undefined = empty cell).
+function debtSheet(
+  full: (string | undefined)[] = [],
+  reduced: (string | undefined)[] = [],
+  symbiose: (string | undefined)[] = [],
+  national: (string | undefined)[] = [],
+): string[][] {
+  const memberCols = [2, 3, 5]; // C, D, F in HEADER
+  const build = (label: string, marks: (string | undefined)[]): string[] => {
+    const r = [label, '', '', '', '', ''];
+    for (let i = 0; i < marks.length; i++) {
+      if (marks[i] !== undefined) r[memberCols[i]] = marks[i] as string;
+    }
+    return r;
+  };
+  return [
+    HEADER,
+    build('Vollbeitrag', full),
+    build('Ermäßigt', reduced),
+    build('Symbiose', symbiose),
+    build('ÖUV', national),
+  ];
+}
+
+describe('findDebtItems — marker detection', () => {
+  it('reports an item when its cell holds the number 1', () => {
+    const items = findDebtItems(debtSheet(['1'], [], ['1']), 'Max Mustermann', DEBT_LABELS);
+    expect(items.has('fullMembership')).toBe(true);
+    expect(items.has('symbiosepauschale')).toBe(true);
+    expect(items.has('reducedMembership')).toBe(false);
+  });
+
+  it('tolerates German-formatted 1 (1,00)', () => {
+    const items = findDebtItems(debtSheet(['1,00']), 'Max Mustermann', DEBT_LABELS);
+    expect(items.has('fullMembership')).toBe(true);
+  });
+
+  it('does NOT report an item for an empty cell', () => {
+    const items = findDebtItems(debtSheet([undefined], [], ['']), 'Max Mustermann', DEBT_LABELS);
+    expect(items.size).toBe(0);
+  });
+
+  it('does NOT report an item for 0 or a value other than 1', () => {
+    const items = findDebtItems(debtSheet(['0', '2', 'x'], [], []), 'Max Mustermann', DEBT_LABELS);
+    // Max's cell (first member column) is '0' → not invoiced.
+    expect(items.has('fullMembership')).toBe(false);
+  });
+
+  it('reads each member from their own column', () => {
+    // Anna (2nd member col, D) has reduced; Köstler (3rd, F) has symbiose.
+    const items = findDebtItems(
+      debtSheet([], [undefined, '1'], [undefined, undefined, '1']),
+      'Anna Anders',
+      DEBT_LABELS,
+    );
+    expect(items.has('reducedMembership')).toBe(true);
+    expect(items.has('symbiosepauschale')).toBe(false);
+
+    const koestler = findDebtItems(
+      debtSheet([], [undefined, '1'], [undefined, undefined, '1']),
+      'Julius Köstler',
+      DEBT_LABELS,
+    );
+    expect(koestler.has('symbiosepauschale')).toBe(true);
+    expect(koestler.has('reducedMembership')).toBe(false);
+  });
+
+  it('reports the national fee when its row cell holds 1', () => {
+    const items = findDebtItems(debtSheet([], [], [], ['1']), 'Max Mustermann', DEBT_LABELS);
+    expect(items.has('nationalFee')).toBe(true);
+    expect(items.has('fullMembership')).toBe(false);
+  });
+});
+
+describe('findDebtItems — row label + name matching', () => {
+  it('matches the row label case-insensitively', () => {
+    const rows = [HEADER, ['vollbeitrag', '', '1']];
+    const items = findDebtItems(rows, 'Max Mustermann', DEBT_LABELS);
+    expect(items.has('fullMembership')).toBe(true);
+  });
+
+  it('matches the member name order-independently', () => {
+    const items = findDebtItems(debtSheet([undefined, undefined, '1']), 'Köstler Julius', DEBT_LABELS);
+    expect(items.has('fullMembership')).toBe(true);
+  });
+
+  it('returns an empty set when the member is not in the header', () => {
+    const items = findDebtItems(debtSheet(['1']), 'Someone Else', DEBT_LABELS);
+    expect(items.size).toBe(0);
+  });
+
+  it('returns an empty set for an empty sheet', () => {
+    const items = findDebtItems([], 'Max Mustermann', DEBT_LABELS);
+    expect(items.size).toBe(0);
+  });
+
+  it('skips items whose label is blank (feature off for that item)', () => {
+    const items = findDebtItems(
+      debtSheet(['1'], ['1'], ['1'], ['1']),
+      'Max Mustermann',
+      { fullMembership: '', reducedMembership: 'Ermäßigt', symbiosepauschale: '', nationalFee: '' },
+    );
+    expect(items.has('fullMembership')).toBe(false);
+    expect(items.has('reducedMembership')).toBe(true);
+    expect(items.has('symbiosepauschale')).toBe(false);
+    expect(items.has('nationalFee')).toBe(false);
   });
 });

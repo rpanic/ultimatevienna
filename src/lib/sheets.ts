@@ -321,6 +321,23 @@ function parseAmount(raw: string): number | null {
 }
 
 /**
+ * Find a member's column index in a transposed sheet by order-independent name
+ * match against the header row (rows[0]) — "First Last", "Last First" and
+ * "Last, First" all match the same column (see normalizeName). Returns -1 when
+ * the sheet is empty, the name is blank, or no header cell matches. Shared by
+ * findCreditInSheet and findDebtItems so the column search lives in one place.
+ */
+function findMemberColumn(rows: string[][], fullName: string): number {
+  const target = normalizeName(fullName);
+  if (!target || rows.length === 0) return -1;
+  const header = rows[0];
+  for (let c = 0; c < header.length; c++) {
+    if (normalizeName(String(header[c] ?? '')) === target) return c;
+  }
+  return -1;
+}
+
+/**
  * Pure core of the credit lookup. The credit sheet is laid out TRANSPOSED:
  *   - Row 1 (header, rows[0]): the first cell is "Guthaben", then team/section
  *     labels ("Echo", "Rumble", "Neu/Alt/External", "EÖFC", "UVie"), with one
@@ -339,18 +356,8 @@ function parseAmount(raw: string): number | null {
  * tested without the Sheets API (see sheets.test.ts).
  */
 export function findCreditInSheet(rows: string[][], fullName: string): number | null {
-  const target = normalizeName(fullName);
-  if (!target || rows.length === 0) return null;
-
   // 1. Find the member's column by matching the header (row 1).
-  const header = rows[0];
-  let memberCol = -1;
-  for (let c = 0; c < header.length; c++) {
-    if (normalizeName(String(header[c] ?? '')) === target) {
-      memberCol = c;
-      break;
-    }
-  }
+  const memberCol = findMemberColumn(rows, fullName);
   if (memberCol < 0) return null;
 
   // 2. Find the "Guthabenstand" (balance) row by its column-A label.
@@ -417,5 +424,109 @@ export async function getOutstandingCredit(fullName: string): Promise<number | n
   } catch (err) {
     console.error('[sheets] credit lookup failed:', err);
     return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Debt-sheet "already invoiced" markers. The same credit/debt sheet has, in
+// column A, four extra row labels (configured via env — DEBT_ROW_*) marking
+// that a member's UVie full membership / reduced (student) membership /
+// Symbiosepauschale / ÖUV national federation fee has already been added to
+// their UVie debt. We must NOT invoice those again on registration. For a
+// member we find their COLUMN (order-independent header match, same as
+// findCreditInSheet), then for each labeled row read the cell at
+// [row][memberCol]; a cell containing the number 1 means "already invoiced".
+// When the row-label env vars are unset the feature is off (nothing is
+// dropped). See membership.ts: getMembershipInfo.
+// ---------------------------------------------------------------------------
+
+export type DebtItem = 'fullMembership' | 'reducedMembership' | 'symbiosepauschale' | 'nationalFee';
+
+export interface DebtRowLabels {
+  fullMembership: string;
+  reducedMembership: string;
+  symbiosepauschale: string;
+  nationalFee: string;
+}
+
+/**
+ * A cell "already invoiced" marker: the debt sheet writes the number 1 into a
+ * member's cell on the membership/symbiose row when that item has already been
+ * added to their UVie debt. German formatting ("1,00") is tolerated via
+ * parseAmount; anything else (empty, 0, text) means not invoiced.
+ */
+function isDebtMarker(cell: string): boolean {
+  const n = parseAmount(cell);
+  return n !== null && n === 1;
+}
+
+/**
+ * Pure core of the debt-marker lookup. For the member's column (found by
+ * order-independent name match against the header row, same as
+ * findCreditInSheet), check each of the four labeled rows and return the set
+ * of items already on the member's debt. An empty/missing label skips that
+ * item (feature off for it). Returns an empty set when the sheet is empty or
+ * the member isn't in the header. Extracted so it can be unit-tested without
+ * the Sheets API (see sheets.test.ts).
+ */
+export function findDebtItems(
+  rows: string[][],
+  fullName: string,
+  labels: DebtRowLabels,
+): Set<DebtItem> {
+  const result = new Set<DebtItem>();
+  const memberCol = findMemberColumn(rows, fullName);
+  if (memberCol < 0) return result;
+
+  const has = (label: string): boolean => {
+    const want = label.trim().toLowerCase();
+    if (!want) return false;
+    for (let r = 0; r < rows.length; r++) {
+      if (String(rows[r][0] ?? '').trim().toLowerCase() === want) {
+        return isDebtMarker(String(rows[r]?.[memberCol] ?? ''));
+      }
+    }
+    return false;
+  };
+
+  if (has(labels.fullMembership)) result.add('fullMembership');
+  if (has(labels.reducedMembership)) result.add('reducedMembership');
+  if (has(labels.symbiosepauschale)) result.add('symbiosepauschale');
+  if (has(labels.nationalFee)) result.add('nationalFee');
+  return result;
+}
+
+/**
+ * Read the three debt-marker row labels from env. Returns null when none are
+ * set (feature off); any unset label is treated as "that row isn't used".
+ */
+function debtRowLabels(): DebtRowLabels | null {
+  const fullMembership = env('DEBT_ROW_FULL_MEMBERSHIP') ?? '';
+  const reducedMembership = env('DEBT_ROW_REDUCED_MEMBERSHIP') ?? '';
+  const symbiosepauschale = env('DEBT_ROW_SYMBIOSEPAUSCHALE') ?? '';
+  const nationalFee = env('DEBT_ROW_NATIONAL_FEE') ?? '';
+  if (!fullMembership && !reducedMembership && !symbiosepauschale && !nationalFee) return null;
+  return { fullMembership, reducedMembership, symbiosepauschale, nationalFee };
+}
+
+/**
+ * Look up which UVie-side items (full membership / reduced membership /
+ * Symbiosepauschale / ÖUV national federation fee) are already on a member's
+ * debt in the credit/debt sheet, so they aren't invoiced again. Returns an
+ * empty set when the feature is off (no row labels, no credit sheet, or sheets
+ * not configured), the name is blank, or nothing is marked. Never throws.
+ */
+export async function getDebtItems(fullName: string): Promise<Set<DebtItem>> {
+  const labels = debtRowLabels();
+  if (!labels || !env('CREDIT_SHEET_SPREADSHEET_ID') || !isSheetsConfigured()) {
+    return new Set();
+  }
+  if (!normalizeName(fullName)) return new Set();
+  try {
+    const rows = await fetchCreditRows();
+    return findDebtItems(rows, fullName, labels);
+  } catch (err) {
+    console.error('[sheets] debt-items lookup failed:', err);
+    return new Set();
   }
 }
