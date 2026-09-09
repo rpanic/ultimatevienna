@@ -24,6 +24,12 @@ export const server = {
       otherClubs: z.string().trim().optional(),
       payNationalFee: z.boolean().default(false),
       student: z.boolean().default(false),
+      // Club the member says they already paid this season's membership fee
+      // to ('none' if not). Removes that club's payment from the confirmation.
+      alreadyPaidClub: z.enum(['none', 'UVie', 'EÖFC']).default('none'),
+      // Echo/rumble only: the member already paid the Symbiosepauschale to the
+      // other club too, so that payment is also dropped. Foxes can't set this.
+      alreadyPaidSymbiose: z.boolean().default(false),
       // Honeypot: a visually-hidden field humans leave empty. See handler.
       website: z.string().trim().optional(),
     }),
@@ -45,6 +51,8 @@ export const server = {
           otherClubs: input.otherClubs,
           payNationalFee: input.payNationalFee,
           student: input.student,
+          alreadyPaidClub: input.alreadyPaidClub,
+          alreadyPaidSymbiose: input.alreadyPaidSymbiose,
         });
 
         // Build the membership summary once: it drives both the email and the
@@ -55,7 +63,7 @@ export const server = {
         await sendEmail(input.email, { html }, 'Ultimate Vienna Registration');
 
         const notificationEmail = env("NOTIFICATION_EMAIL")
-        await sendEmail(notificationEmail!, { text: `New member registered: ${input.firstName} ${input.lastName} (${input.email}).'\nJugend: ${input.student}, ÖUV: ${input.payNationalFee}` }, "New member registered")
+        await sendEmail(notificationEmail!, { text: `New member registered: ${input.firstName} ${input.lastName} (${input.email}).'\nJugend: ${input.student}, ÖUV: ${input.payNationalFee}, Bereits bezahlt: ${input.alreadyPaidClub}, Symbiose bereits bezahlt: ${input.alreadyPaidSymbiose ? 'ja' : 'nein'}` }, "New member registered")
 
         // Stash the summary under an opaque token so the result page can render
         // it without putting personal data in the URL.

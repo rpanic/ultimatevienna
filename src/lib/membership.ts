@@ -119,6 +119,12 @@ export interface MembershipInfo {
     payNationalFee: boolean;
     /** University / high school student — pays a reduced membership fee. */
     student: boolean;
+    /** Club the member says they already paid this season's membership fee to
+     * ('none' if not). The matching club's payment is dropped from the summary. */
+    alreadyPaidClub: 'none' | Club;
+    /** Echo/rumble only: the member already paid the Symbiosepauschale to the
+     * other club too, so that payment is also dropped. Always false for foxes. */
+    alreadyPaidSymbiose: boolean;
   };
   /** The club the member was assigned to (echo/rumble only; foxes -> UVie). */
   assignedClub?: Club;
@@ -239,6 +245,8 @@ export async function getMembershipInfo(appendResult: AppendResult): Promise<Mem
     otherClubs: row.otherClubs,
     payNationalFee: row.payNationalFee,
     student: row.student,
+    alreadyPaidClub: row.alreadyPaidClub,
+    alreadyPaidSymbiose: row.alreadyPaidSymbiose,
   };
   const season = currentSeason();
 
@@ -247,7 +255,7 @@ export async function getMembershipInfo(appendResult: AppendResult): Promise<Mem
   // buildPayments so it can be reused without the sheet round-trip.
   const assignedClub: Club = row.team === 'foxes' ? 'UVie' : appendResult.club!;
 
-  const payments = buildPayments({
+  let payments = buildPayments({
     team: row.team,
     assignedClub,
     student: row.student,
@@ -255,19 +263,49 @@ export async function getMembershipInfo(appendResult: AppendResult): Promise<Mem
     season,
   });
 
+  // If the member already paid a club's membership fee this season, drop that
+  // club's fee items (we can't verify, so we don't double-charge). Clear the
+  // items but keep the card for now — the outstanding UVie debt (added next) is
+  // NOT the membership fee and must still be collected, so the UVie card may
+  // survive with only the debt. Empty cards are dropped after.
+  const alreadyPaid = row.alreadyPaidClub;
+  if (alreadyPaid !== 'none') {
+    payments = payments.map((p) =>
+      p.club === alreadyPaid ? { ...p, items: [], amount: 0 } : p,
+    );
+  }
+
+  // Echo/rumble only: if the member already paid the Symbiosepauschale to the
+  // OTHER club too, drop that card. The Symbiosepauschale is always paid to the
+  // non-assigned club, so we clear that club's card (same clear-but-keep-then-
+  // drop-below pattern). The outstanding UVie debt added next is separate and
+  // still collected. Foxes never set this (no Symbiosepauschale).
+  if (row.alreadyPaidSymbiose && row.team !== 'foxes') {
+    const other: Club = assignedClub === 'UVie' ? 'EÖFC' : 'UVie';
+    payments = payments.map((p) =>
+      p.club === other ? { ...p, items: [], amount: 0 } : p,
+    );
+  }
+
   // Add any outstanding UVie debt (from the separate credit sheet) as a line
-  // item on the UVie payment, so the member pays it in the same transfer.
-  // getOutstandingCredit returns a positive amount only when the member owes
-  // (negative "Guthabenstand"); null means no debt, the feature is off, or the
-  // name isn't in the credit sheet.
+  // item on the UVie payment, so the member pays it in the same transfer. The
+  // debt is a prior unpaid amount, separate from this season's membership fee,
+  // so it's added even when the member "already paid UVie" (the UVie card was
+  // cleared above but still exists). getOutstandingCredit returns a positive
+  // amount only when the member owes; 0/null means no debt or feature off.
   const credit = await getOutstandingCredit(`${row.firstName} ${row.lastName}`);
-  if (credit !== null) {
+  if (credit && credit > 0) {
     const uvie = payments.find((p) => p.club === 'UVie');
+    const paymentLine = { amount: credit, description: 'Offener Betrag Guthaben' }
     if (uvie) {
-      uvie.items = [...uvie.items, { amount: credit, description: 'Offener Betrag UVie' }];
+      uvie.items = [...uvie.items, paymentLine];
       uvie.amount += credit;
     }
   }
+
+  // Drop cards left with no items (the already-paid club with no outstanding
+  // debt) so that club's payment isn't shown at all.
+  payments = payments.filter((p) => p.items.length > 0);
 
   return {
     team: row.team,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { actions } from 'astro:actions';
 import { isValidEmail } from '../lib/api';
 
@@ -15,6 +15,16 @@ const form = reactive({
   otherClubs: '',
   payNationalFee: true,
   student: false,
+  // "Already paid this season's membership fee?" — when checked, the matching
+  // club's payment is removed from the confirmation. Foxes only ever pay UVie,
+  // so for them the checkbox alone means "already paid UVie" (no club picker).
+  // For echo/rumble the picker (alreadyPaidClub) chooses UVie or EÖFC.
+  alreadyPaid: false,
+  alreadyPaidClub: 'UVie' as 'UVie' | 'EÖFC',
+  // Echo/rumble only: shown only when `alreadyPaid` is checked. The
+  // Symbiosepauschale is paid to the OTHER club, so this drops that payment.
+  // Foxes never see it (no Symbiosepauschale), so it's forced false on submit.
+  alreadyPaidSymbiose: false,
   // Honeypot: hidden from humans; bots that autofill all fields trip it. The
   // action silently no-ops when this is non-empty.
   website: '',
@@ -22,6 +32,12 @@ const form = reactive({
 
 const status = ref<'idle' | 'loading' | 'success' | 'error'>('idle');
 const errorMessage = ref('');
+
+// The Symbiosepauschale is paid to the club the member did NOT pick as already
+// paid. Drives the label on the second checkbox.
+const symbioseClub = computed<'UVie' | 'EÖFC'>(() =>
+  form.alreadyPaidClub === 'UVie' ? 'EÖFC' : 'UVie',
+);
 
 function validate(): string | null {
   if (!form.firstName.trim()) return 'Please enter your first name.';
@@ -57,6 +73,12 @@ async function onSubmit() {
       // Foxes has no student discount — never send student=true for that team,
       // even if the checkbox somehow held a stale value.
       student: props.team === 'foxes' ? false : form.student,
+      alreadyPaidClub: form.alreadyPaid
+        ? (props.team === 'foxes' ? 'UVie' : form.alreadyPaidClub)
+        : 'none',
+      // Only meaningful for echo/rumble AND when the first checkbox is on.
+      alreadyPaidSymbiose:
+        form.alreadyPaid && props.team !== 'foxes' && form.alreadyPaidSymbiose,
       website: form.website,
     });
     if (error || !data) {
@@ -146,6 +168,31 @@ async function onSubmit() {
         I am a student (university or high school, no income), under 26 years old and want to use the reduced membership fee (130€).
       </span>
     </label>
+
+    <div>
+      <label class="flex items-start gap-3 cursor-pointer">
+        <input v-model="form.alreadyPaid" type="checkbox" class="mt-1 h-4 w-4 accent-[var(--color-accent)]" />
+        <span class="text-[.9rem] text-text">
+          I've already paid this season's membership fee to a club
+        </span>
+      </label>
+      <div v-if="form.alreadyPaid && props.team !== 'foxes'" class="mt-3 max-w-[240px]">
+        <label for="alreadyPaidClub" class="form-label">Which club?</label>
+        <select id="alreadyPaidClub" v-model="form.alreadyPaidClub" class="form-input">
+          <option value="UVie">UVie</option>
+          <option value="EÖFC">EÖFC</option>
+        </select>
+      </div>
+      <label
+        v-if="form.alreadyPaid && props.team !== 'foxes'"
+        class="flex items-start gap-3 cursor-pointer mt-3"
+      >
+        <input v-model="form.alreadyPaidSymbiose" type="checkbox" class="mt-1 h-4 w-4 accent-[var(--color-accent)]" />
+        <span class="text-[.9rem] text-text">
+          I've already paid the Symbiosepauschale to {{ symbioseClub }} too.
+        </span>
+      </label>
+    </div>
 
     <div v-if="status === 'error'" class="rounded-lg bg-accent/10 border border-accent/30 text-accent px-4 py-3 text-[.9rem]">
       {{ errorMessage }}

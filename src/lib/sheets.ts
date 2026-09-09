@@ -12,7 +12,16 @@ import { google, type sheets_v4 } from 'googleapis';
 // read and write. The Members tab must have a header row in this exact order:
 //
 //   A Timestamp | B FirstName | C LastName | D Email | E BirthDate
-//   F Phone | G Address | H OtherClubs | I PayNationalFee | J Student | K Club | L Status
+//   F Phone | G Address | H OtherClubs | I PayNationalFee | J Student | K Club
+//   L Status | M AlreadyPaidClub | N AlreadyPaidSymbiose
+//
+// appendMember writes these values (the alreadyPaidClub selection is encoded
+// into K + L, not written as a literal value under its own column):
+//   K Club   — the assigned club; suffixed " - alt" when alreadyPaidClub
+//              !== none (e.g. "UVie - alt"), otherwise the bare club name.
+//   L Status — "claimed" when alreadyPaidClub !== none, else "pending".
+//   M        — "claimed" when alreadyPaidSymbiose, else "pending".
+//   N        — not written (reserved).
 //
 // Team values are "echo" or "foxes" (implied by the tab). Student is "yes"/"no"
 // (university / high school students pay a reduced membership fee). When the
@@ -80,6 +89,8 @@ const COLUMNS = [
   'Student',
   'Club',
   'Status',
+  'AlreadyPaidClub',
+  'AlreadyPaidSymbiose',
 ] as const;
 
 export type Team = 'echo' | 'foxes';
@@ -126,6 +137,14 @@ export interface MemberRow {
   payNationalFee: boolean;
   /** University / high school student — pays a reduced membership fee. */
   student: boolean;
+  /** Club the member says they already paid this season's membership fee to
+   * ('none' if not already paid). Drives removing that club's payment from the
+   * confirmation; stored in sheet column M. */
+  alreadyPaidClub: 'none' | Club;
+  /** Echo/rumble only: the member says they already paid the Symbiosepauschale
+   * to the OTHER club this season, so that payment is dropped too. Stored in
+   * sheet column N as "yes"/"no". Always false for foxes. */
+  alreadyPaidSymbiose: boolean;
 }
 
 export interface AppendResult {
@@ -143,7 +162,8 @@ export async function appendMember(row: MemberRow): Promise<AppendResult> {
     return { success: true, dryRun: true, row };
   }
 
-  const club: Club = row.team === "foxes" ? "UVie" : await getNextEchoRumbleClub();
+  const club = row.team === "foxes" ? "UVie" : (row.alreadyPaidClub !== "none" ? row.alreadyPaidClub : await getNextEchoRumbleClub());
+  const clubSheetString = row.alreadyPaidClub !== "none" ? club + " - alt" : club;
 
   const values = [[
     new Date().toISOString(),
@@ -156,8 +176,9 @@ export async function appendMember(row: MemberRow): Promise<AppendResult> {
     row.otherClubs ?? '',
     row.payNationalFee ? 'yes' : 'no',
     row.student ? 'yes' : 'no',
-    club,
-    'pending',
+    clubSheetString,
+    row.alreadyPaidClub !== "none" ? "claimed" : "pending",
+    row.alreadyPaidSymbiose ? 'claimed' : 'pending',
   ]];
 
 
