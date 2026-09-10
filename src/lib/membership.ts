@@ -19,11 +19,11 @@ import { getDebtItems, getOutstandingCredit, type AppendResult, type Club, type 
 //
 // Payment rules. A member is on a team (Foxes or Echo/Rumble) and may be a
 // student (university / high school), which reduces the main club membership
-// fee only — the 30 € Symbiosepauschale and the optional 20 € ÖBV national fee
+// fee only — the 35 € Symbiosepauschale and the optional 20 € ÖBV national fee
 // are unaffected.
 //   - Foxes:                       one payment to UVie for the Foxes amount.
-//   - Echo/Rumble, assigned UVie:  UVie amount to UVie + 30 € Symbiosepauschale to EÖFC.
-//   - Echo/Rumble, assigned EÖFC:  EÖFC amount to EÖFC + 30 € Symbiosepauschale to UVie.
+//   - Echo/Rumble, assigned UVie:  UVie amount to UVie + 35 € Symbiosepauschale to EÖFC.
+//   - Echo/Rumble, assigned EÖFC:  EÖFC amount to EÖFC + 35 € Symbiosepauschale to UVie.
 // Each amount has a reduced student variant.
 
 // --- Configuration ----------------------------------------------------------
@@ -31,7 +31,7 @@ import { getDebtItems, getOutstandingCredit, type AppendResult, type Club, type 
 // account details are read from env vars (UVIE_BANK_* / EOFC_BANK_*) below —
 // see .env.example. They fall back to the placeholders so the site stays
 // demoable without the env set.
-const SYMBIOSE_PAUSCHALE = 30;
+const SYMBIOSE_PAUSCHALE = 35;
 const OEUV_BEITRAG = 20;
 
 const AMOUNTS = {
@@ -154,8 +154,8 @@ export interface PaymentInput {
  * frontend to preview amounts without round-tripping through the sheet.
  *
  *   - Foxes:                       one payment to UVie (Foxes amount + optional ÖBV).
- *   - Echo/Rumble, assigned UVie:  UVie amount to UVie + 30 € Symbiosepauschale to EÖFC.
- *   - Echo/Rumble, assigned EÖFC:   EÖFC amount to EÖFC + 30 € Symbiosepauschale to UVie.
+ *   - Echo/Rumble, assigned UVie:  UVie amount to UVie + 35 € Symbiosepauschale to EÖFC.
+ *   - Echo/Rumble, assigned EÖFC:   EÖFC amount to EÖFC + 35 € Symbiosepauschale to UVie.
  *
  * The student rate replaces only the main club fee; the Symbiosepauschale and
  * the optional ÖBV fee are unaffected. Foxes has no student rate.
