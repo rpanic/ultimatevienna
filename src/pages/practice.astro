@@ -1,16 +1,29 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 
-// Google Sheet embed URL for the practice-times overview, read from .env so it
-// can change without a code edit. Set PUBLIC_PRACTICE_SHEET_EMBED_URL in .env
-// to the sheet's "Publish to web → Embed" src (File → Share → Publish to web),
-// e.g.:
+// Google Sheet embed URL for the practice-times overview, read from the
+// environment so it can change without a code edit. Set
+// PUBLIC_PRACTICE_SHEET_EMBED_URL in .env to the sheet's "Publish to web →
+// Embed" src (File → Share → Publish to web), e.g.:
 //   https://docs.google.com/spreadsheets/d/e/<2PACX-…>/pubhtml?gid=…&single=true&widget=true&headers=false
 // Use plain "&" between query params (Astro HTML-escapes the value for you).
 // Publishing (rather than the /edit link) keeps it viewable without sign-in.
-// The PUBLIC_ prefix exposes it at build time (the URL is public anyway; it
-// ends up in the iframe src). When unset, the page shows a short fallback.
-const EMBED_URL = import.meta.env.PUBLIC_PRACTICE_SHEET_EMBED_URL ?? '';
+//
+// This page is on-demand (prerender = false) so the URL is read at REQUEST
+// time, not baked in at build time. That matters for Docker: .env is excluded
+// from the image build context (.dockerignore), so a build-time PUBLIC_ var
+// would be empty in the image. Reading at runtime means the value comes from
+// the container's environment — `docker run --env-file .env` / compose
+// `env_file: .env` — the same way every other config var (Sheets creds,
+// Resend, bank accounts) is supplied. import.meta.env is checked first so
+// `astro dev` (which exposes PUBLIC_ vars from .env) still works. When unset,
+// the page shows a short fallback instead of a broken iframe.
+export const prerender = false;
+
+const EMBED_URL =
+  import.meta.env.PUBLIC_PRACTICE_SHEET_EMBED_URL ||
+  (typeof process !== 'undefined' && process.env.PUBLIC_PRACTICE_SHEET_EMBED_URL) ||
+  '';
 ---
 
 <BaseLayout title="Practice Times — Ultimate Vienna" current="practice">
