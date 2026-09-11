@@ -1,5 +1,5 @@
 ---
-export type NavKey = 'home' | 'echo' | 'foxes' | 'imprint' | 'join' | 'status';
+export type NavKey = 'home' | 'echo' | 'foxes' | 'practice' | 'imprint' | 'join' | 'status';
 
 interface Props {
   current?: NavKey;
@@ -11,6 +11,7 @@ const links: { key: NavKey; href: string; label: string }[] = [
   { key: 'home', href: '/', label: 'Home' },
   { key: 'echo', href: '/teams/echo', label: 'Echo / Rumble' },
   { key: 'foxes', href: '/teams/foxes', label: 'Foxes' },
+  { key: 'practice', href: '/practice', label: 'Practice' },
   { key: 'join', href: '/join', label: 'Join' },
   { key: 'imprint', href: '/imprint', label: 'Imprint' },
 ];

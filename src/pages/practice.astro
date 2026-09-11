@@ -1,0 +1,52 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Google Sheet embed URL for the practice-times overview, read from .env so it
+// can change without a code edit. Set PUBLIC_PRACTICE_SHEET_EMBED_URL in .env
+// to the sheet's "Publish to web → Embed" src (File → Share → Publish to web),
+// e.g.:
+//   https://docs.google.com/spreadsheets/d/e/<2PACX-…>/pubhtml?gid=…&single=true&widget=true&headers=false
+// Use plain "&" between query params (Astro HTML-escapes the value for you).
+// Publishing (rather than the /edit link) keeps it viewable without sign-in.
+// The PUBLIC_ prefix exposes it at build time (the URL is public anyway; it
+// ends up in the iframe src). When unset, the page shows a short fallback.
+const EMBED_URL = import.meta.env.PUBLIC_PRACTICE_SHEET_EMBED_URL ?? '';
+---
+
+<BaseLayout title="Practice Times — Ultimate Vienna" current="practice">
+  <!-- Hero -->
+  <section class="relative min-h-[260px] flex items-end overflow-hidden bg-primary">
+    <div class="relative z-1 max-w-[1120px] w-full mx-auto px-6 py-12">
+      <span class="inline-block text-[.7rem] font-semibold uppercase tracking-widest text-white bg-accent px-3 py-1 rounded mb-3">Schedule</span>
+      <h1 class="font-heading text-[2.5rem] text-white mb-1">Practice Times</h1>
+      <p class="text-white/75 text-[1.05rem]">All training sessions for every squad, at a glance.</p>
+    </div>
+  </section>
+
+  <!-- Embedded sheet -->
+  <section class="max-w-[1120px] mx-auto px-6 py-16">
+    {EMBED_URL ? (
+      <div class="bg-surface rounded-lg p-2 shadow-sm">
+        <iframe
+          src={EMBED_URL}
+          title="Ultimate Vienna practice times"
+          loading="lazy"
+          class="w-full h-[80vh] min-h-[600px] border-0 rounded-md"
+        ></iframe>
+      </div>
+    ) : (
+      <div class="bg-surface rounded-lg p-8 shadow-sm text-center">
+        <p class="text-text-light text-[.95rem]">
+          The practice schedule will be shown here once the Google Sheet is
+          embedded. See <code class="text-accent">src/pages/practice.astro</code>
+          — set <code class="text-accent">EMBED_URL</code>.
+        </p>
+      </div>
+    )}
+
+    <p class="text-text-light text-[.9rem] mt-4">
+      Times can change season to season &mdash; check the team pages for details,
+      or contact us if anything is unclear.
+    </p>
+  </section>
+</BaseLayout>
