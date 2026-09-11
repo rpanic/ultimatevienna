@@ -28,6 +28,10 @@ const form = reactive({
   // Honeypot: hidden from humans; bots that autofill all fields trip it. The
   // action silently no-ops when this is non-empty.
   website: '',
+  // Mandatory GDPR consent: the registration may not be submitted unless the
+  // member agrees to the privacy policy. Validated in validate(); not sent to
+  // the action (the gate is client-side, like the other required fields).
+  consent: false,
 });
 
 const status = ref<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -44,6 +48,7 @@ function validate(): string | null {
   if (!form.lastName.trim()) return 'Please enter your last name.';
   if (!isValidEmail(form.email)) return 'Please enter a valid email address.';
   if (!form.birthDate) return 'Please enter your date of birth.';
+  if (!form.consent) return 'Please accept the privacy policy to continue.';
   return null;
 }
 
@@ -193,6 +198,16 @@ async function onSubmit() {
         </span>
       </label>
     </div>
+
+    <label class="flex items-start gap-3 cursor-pointer">
+      <input v-model="form.consent" type="checkbox" class="mt-1 h-4 w-4 accent-[var(--color-accent)]" />
+      <span class="text-[.9rem] text-text">
+        I have read and agree to the
+        <a href="/imprint#privacy" @click.stop class="text-accent hover:text-accent-light transition-colors duration-250 underline">privacy policy</a>.
+        My registration data is stored to administer my membership.
+        <span class="text-primary">*</span>
+      </span>
+    </label>
 
     <div v-if="status === 'error'" class="rounded-lg bg-accent/10 border border-accent/30 text-accent px-4 py-3 text-[.9rem]">
       {{ errorMessage }}
