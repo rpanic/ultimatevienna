@@ -48,6 +48,8 @@ function validate(): string | null {
   if (!form.lastName.trim()) return 'Please enter your last name.';
   if (!isValidEmail(form.email)) return 'Please enter a valid email address.';
   if (!form.birthDate) return 'Please enter your date of birth.';
+  if (!form.phone.trim()) return 'Please enter your phone number.';
+  if (!form.address.trim()) return 'Please enter your address.';
   if (!form.consent) return 'Please accept the privacy policy to continue.';
   return null;
 }
@@ -141,12 +143,12 @@ async function onSubmit() {
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
       <div>
-        <label for="phone" class="form-label">Phone</label>
-        <input id="phone" v-model="form.phone" type="tel" class="form-input" autocomplete="tel" />
+        <label for="phone" class="form-label">Phone *</label>
+        <input id="phone" v-model="form.phone" type="tel" required class="form-input" autocomplete="tel" />
       </div>
       <div>
-        <label for="address" class="form-label">Address</label>
-        <input id="address" v-model="form.address" type="text" class="form-input" autocomplete="street-address" />
+        <label for="address" class="form-label">Address *</label>
+        <input id="address" v-model="form.address" type="text" required class="form-input" autocomplete="street-address" />
       </div>
     </div>
 
