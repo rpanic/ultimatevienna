@@ -157,7 +157,7 @@ async function onSubmit() {
 
     <label class="flex items-start gap-3 cursor-pointer">
       <input v-model="form.payNationalFee" type="checkbox" class="mt-1 h-4 w-4 accent-[var(--color-accent)]"/>
-      <span class="text-[.9rem] text-text">Should Ultimate Vienna pay your national club (ÖUV) fee on your behalf? Necessary to play championships. Only necessary to pay once, if other clubs already pay it for you, uncheck this.</span>
+      <span class="text-[.9rem] text-text">Should Ultimate Vienna pay your national club (ÖUV) fee on your behalf? Necessary to play championships and national teams. Only necessary to pay once per year, if already paid by other club, uncheck this.</span>
     </label>
 
     <label
