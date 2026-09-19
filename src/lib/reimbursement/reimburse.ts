@@ -362,7 +362,7 @@ export async function stageApprovedExpenseRow(
   const { resolved, unresolved } = resolveMemberColumns(rows, input.split.map((s) => s.name));
   if (unresolved.length > 0) return { dryRun: false, unresolved, written: false };
 
-  const label = expenseRowLabel(input.id, input.expenseDate, input.description);
+  const label = input.description;
   // Pad to the debt sheet's full header width so the row aligns column-for-column
   // when pasted, regardless of which members are in the split.
   const width = rows[0].length;
