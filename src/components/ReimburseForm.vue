@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
-import { splitByWeights, type SplitEntry } from '../lib/reimbursePure';
+import { splitByWeights, type SplitEntry } from '../lib/reimbursement/reimbursePure';
 
 // Member-facing reimbursement request form. Posts multipart/form-data (the
 // receipt is a file, so this can't use Astro Actions which are JSON) to

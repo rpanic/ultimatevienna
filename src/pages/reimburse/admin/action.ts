@@ -4,7 +4,7 @@ import {
   listReimbursements,
   appendApprovedExpenseToDebtSheet,
   updateReimburseStatus,
-} from '../../../lib/reimburse';
+} from '../../../lib/reimbursement/reimburse';
 
 // On-demand: reads the form body + writes to the Reimbursements / debt sheet at
 // request time. Basic auth is enforced by the middleware.

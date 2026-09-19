@@ -8,8 +8,8 @@ import {
   uploadReceiptToDrive,
   splitByWeights,
   type SplitEntry,
-} from '../../lib/reimburse';
-import { storeReimburse } from '../../lib/reimburseStore';
+} from '../../lib/reimbursement/reimburse';
+import { storeReimburse } from '../../lib/reimbursement/reimburseStore';
 
 // On-demand: reads the multipart body + contacts Drive/Sheets at request time.
 export const prerender = false;

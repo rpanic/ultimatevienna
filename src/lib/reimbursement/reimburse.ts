@@ -1,6 +1,6 @@
 import { Readable } from 'node:stream';
 import type { drive_v3 } from 'googleapis';
-import { env } from './email';
+import { env } from '../email';
 import {
   fetchCreditRows,
   findMemberColumn,
@@ -8,7 +8,7 @@ import {
   getDriveClient,
   isSheetsConfigured,
   parseAmount,
-} from './sheets';
+} from '../sheets';
 import {
   splitByWeights as splitByWeightsImpl,
   expenseRowLabel as expenseRowLabelImpl,
