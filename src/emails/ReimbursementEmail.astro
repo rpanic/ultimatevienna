@@ -1,0 +1,34 @@
+---
+import type { ReimburseEmailSummary } from '../lib/reimbursement/reimburse';
+import ReimbursementSummary from './ReimbursementSummary.astro';
+
+// Full HTML document wrapper around the shared ReimbursementSummary card. Used
+// by renderReimbursementEmail() to produce the printable email string. The
+// visible content lives in ReimbursementSummary.astro, parameterised by the
+// 'member' | 'admin' variant (+ an optional admin review URL).
+const { summary, variant, adminUrl } = Astro.props as {
+  summary: ReimburseEmailSummary;
+  variant: 'member' | 'admin';
+  adminUrl?: string;
+};
+---
+
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ultimate Vienna — Rückerstattung {summary.id}</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2933;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 0;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:100%;">
+            <tr><td><ReimbursementSummary summary={summary} variant={variant} adminUrl={adminUrl} /></td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

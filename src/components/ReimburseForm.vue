@@ -247,7 +247,7 @@ function fmt(n: number): string {
         </li>
       </ul>
 
-      <p class="text-[.8rem] text-text-light mt-2">Images or PDFs, max {{ MAX_FILE_MB }} MB each. We file them in the club's Drive folder for the vorstand.</p>
+      <p class="text-[.8rem] text-text-light mt-2">Images or PDFs, max {{ MAX_FILE_MB }} MB each.</p>
     </div>
 
     <div>
@@ -257,7 +257,7 @@ function fmt(n: number): string {
           <button type="button" class="text-[.8rem] font-semibold text-accent hover:text-accent-light transition-colors duration-250" @click="addPerson">+ Add person</button>
         </div>
       </div>
-      <p class="text-[.8rem] text-text-light mb-3">Enter each person by name and a weight (e.g. 1 each for an even split, or 1 and 2 for a 1/3 — 2/3 split). Use the names as they appear on the club's Guthaben list.</p>
+      <p class="text-[.8rem] text-text-light mb-3">Enter each person by name and a weight (e.g. 1 each for an even split). Use the names precisely as they appear on the Guthaben sheet.</p>
 
       <div v-for="(entry, i) in split" :key="i" class="flex items-start gap-2 mb-2">
           <input
@@ -304,7 +304,7 @@ function fmt(n: number): string {
         <label class="flex items-start gap-3 cursor-pointer">
           <input v-model="form.payoutMethod" type="radio" value="credit" class="mt-[.2rem] h-4 w-4 accent-[var(--color-accent)]" />
           <span class="text-[.9rem] text-text">
-            As <strong>credit</strong> in the club's Guthaben sheet.
+            As <strong>credit</strong> in the Guthaben sheet.
           </span>
         </label>
         <label class="flex items-start gap-3 cursor-pointer">

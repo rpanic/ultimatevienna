@@ -68,7 +68,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       await updateReimburseStatus(id, { status: 'approved', approvedAt: new Date().toISOString() });
       await sendEmail(
         record.submitterEmail,
-        { text: `Your reimbursement request ${id} (${record.total.toLocaleString('de-DE')} € for "${record.description}") was approved and will be added to the Guthaben list. You'll be reimbursed once it's paid — we'll email you again then.` },
+        { text: `Your reimbursement request ${id} (${record.total.toLocaleString('de-DE')} € for "${record.description}") was approved. You'll be reimbursed soon — we'll email you again then.` },
         'Ultimate Vienna — reimbursement approved',
       );
     } else if (action === 'pay') {

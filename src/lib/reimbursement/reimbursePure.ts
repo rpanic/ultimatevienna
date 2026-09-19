@@ -46,3 +46,16 @@ export function splitByWeights(total: number, entries: SplitEntry[]): SplitShare
   }
   return result;
 }
+
+/**
+ * Build the col-A label for a staged debt-sheet row: "<date> <description>
+ * (#<ID>)". The date is trimmed to YYYY-MM-DD (a datetime arrives as ISO with a
+ * time component — only the date belongs in the label). Internal whitespace is
+ * collapsed and the whole string trimmed so the label is a single clean line.
+ * Pure (no I/O).
+ */
+export function expenseRowLabel(id: string, isoDate: string, description: string): string {
+  const date = (isoDate ?? '').slice(0, 10).trim();
+  const desc = (description ?? '').trim();
+  return `${date} ${desc} (#${id})`.replace(/\s+/g, ' ').trim();
+}

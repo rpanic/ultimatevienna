@@ -1,0 +1,134 @@
+---
+import type { ReimburseEmailSummary, PayoutMethod } from '../lib/reimbursement/reimburse';
+
+// The reimbursement summary card: request data + weighted split + payout
+// preference + receipts. Shared by the printable emails — renderReimbursementEmail
+// wraps ReimbursementEmail.astro (a full HTML document) around this — with two
+// variants:
+//   - 'member': a greeting to the submitter + a receipt count (no Drive links —
+//     the member can't access the folder).
+//   - 'admin':  a "new request from …" header + the Drive receipt links + a link
+//     to the admin review page.
+// Styles are inline (mirroring MembershipSummary.astro) because the email needs
+// them; they render fine in the browser too.
+const { summary, variant, adminUrl } = Astro.props as {
+  summary: ReimburseEmailSummary;
+  variant: 'member' | 'admin';
+  adminUrl?: string;
+};
+
+const money = (n: number) => `${n.toFixed(2).replace('.', ',')} €`;
+// expenseDate arrives from the form's date input as ISO YYYY-MM-DD; render it
+// European-style as DD.MM.YYYY. Anything that doesn't match is shown as-is.
+const euroDate = (iso: string) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso?.trim() ?? '');
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : iso;
+};
+
+const firstName = summary.submitterName.split(' ')[0] || summary.submitterName;
+const payoutLabel: Record<PayoutMethod, string> = {
+  credit: 'Guthaben (credit)',
+  bankTransfer: 'Bank transfer',
+};
+const splitSum = summary.split.reduce((s, e) => s + e.amount, 0);
+---
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);border-collapse:separate;">
+  <!-- Header -->
+  <tr>
+    <td style="background:#1f7a52;padding:24px 32px;">
+      <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:700;">Ultimate Vienna</h1>
+      <p style="margin:4px 0 0;color:#eafff4;font-size:13px;">Rückerstattung {summary.id}</p>
+    </td>
+  </tr>
+
+  <tr><td style="padding:24px 32px 0;">
+
+    {variant === 'member' ? (
+      <>
+        <p style="margin:0 0 16px;font-size:15px;">Hallo {firstName},</p>
+        <p style="margin:0 0 24px;font-size:15px;line-height:1.5;">
+          wir haben deinen Rückerstattungsantrag erhalten. Hier ist die
+          Zusammenfassung. Der Vorstand prüft ihn und meldet sich per E-Mail,
+          sobald er genehmigt ist — und noch einmal, sobald er ausgezahlt wurde.
+        </p>
+      </>
+    ) : (
+      <>
+        <p style="margin:0 0 16px;font-size:15px;">Neuer Rückerstattungsantrag,</p>
+        <p style="margin:0 0 24px;font-size:15px;line-height:1.5;">
+          von <b>{summary.submitterName}</b> &lt;{summary.submitterEmail}&gt;.
+          Bitte prüfe den Antrag und die Belege.
+        </p>
+      </>
+    )}
+
+    <!-- Request data -->
+    <h2 style="margin:0 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:#5b6b7a;">Antrag</h2>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.5;border-collapse:collapse;">
+      <tr><td style="padding:4px 0;color:#5b6b7a;width:180px;">Antrags-ID</td><td style="padding:4px 0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">{summary.id}</td></tr>
+      <tr><td style="padding:4px 0;color:#5b6b7a;">Datum der Ausgabe</td><td style="padding:4px 0;">{euroDate(summary.expenseDate)}</td></tr>
+      <tr><td style="padding:4px 0;color:#5b6b7a;">Beschreibung</td><td style="padding:4px 0;">{summary.description}</td></tr>
+      <tr><td style="padding:4px 0;color:#5b6b7a;">Gesamt</td><td style="padding:4px 0;"><b style="color:#1f7a52;">{money(summary.total)}</b></td></tr>
+      <tr><td style="padding:4px 0;color:#5b6b7a;">Auszahlung</td><td style="padding:4px 0;">{payoutLabel[summary.payoutMethod]}</td></tr>
+    </table>
+
+  </td></tr>
+
+  <!-- Split -->
+  <tr><td style="padding:24px 0 0;">
+    <h2 style="margin:0 12px 12px 32px;font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:#5b6b7a;">Aufteilung</h2>
+  </td></tr>
+  <tr><td style="padding:0 32px 8px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e6eaef;border-radius:8px;border-collapse:separate;">
+      {summary.split.map((s) => (
+        <tr>
+          <td style="padding:10px 16px;font-size:14px;color:#1f2933;">{s.name} <span style="color:#5b6b7a;">(Gewicht {s.weight})</span></td>
+          <td align="right" style="padding:10px 16px;font-size:14px;color:#1f2933;white-space:nowrap;">{money(s.amount)}</td>
+        </tr>
+      ))}
+      <tr>
+        <td style="padding:10px 16px;border-top:1px solid #e6eaef;font-size:14px;font-weight:600;color:#1f2933;">Summe</td>
+        <td align="right" style="padding:10px 16px;border-top:1px solid #e6eaef;font-size:14px;font-weight:700;color:#1f7a52;white-space:nowrap;">{money(splitSum)}</td>
+      </tr>
+    </table>
+  </td></tr>
+
+  <!-- Receipts -->
+  <tr><td style="padding:16px 32px 0;">
+    <h2 style="margin:0 0 8px;font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:#5b6b7a;">Belege</h2>
+    {variant === 'member' ? (
+      <p style="margin:0;font-size:14px;line-height:1.5;color:#1f2933;">
+        {summary.receiptUploaded === false
+          ? `${summary.receiptCount} Beleg${summary.receiptCount === 1 ? '' : 'e'} — im Dry-Run nicht hochgeladen.`
+          : `${summary.receiptCount} Beleg${summary.receiptCount === 1 ? '' : 'e'} wurden in der Drive-Ablage des Vereins hinterlegt.`}
+      </p>
+    ) : (
+      summary.receiptLinks.length > 0 ? (
+        <p style="margin:0;font-size:14px;line-height:1.8;">
+          {summary.receiptLinks.map((href) => (
+            <a href={href} target="_blank" rel="noopener" style="color:#1f7a52;text-decoration:none;">Beleg ansehen &nearr;</a><br />
+          ))}
+        </p>
+      ) : (
+        <p style="margin:0;font-size:13px;color:#5b6b7a;">Keine Belege (Dry-Run).</p>
+      )
+    )}
+  </td></tr>
+
+  {variant === 'admin' && adminUrl && (
+    <tr><td style="padding:16px 32px 0;">
+      <p style="margin:0;font-size:14px;">
+        <a href={adminUrl} target="_blank" rel="noopener" style="display:inline-block;background:#1f7a52;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600;">Antrag prüfen &nearr;</a>
+      </p>
+    </td></tr>
+  )}
+
+  <!-- Footer -->
+  <tr><td style="background:#f4f5f7;padding:16px 32px;border-top:1px solid #e6eaef;">
+    <p style="margin:0;font-size:12px;color:#5b6b7a;">
+      Ultimate Vienna · vorstand@ultimatevienna.net<br />
+      {variant === 'member' ? 'Fragen? Antworte einfach auf diese E-Mail.' : 'Vorstand — admin-Bereich.'}
+    </p>
+  </td></tr>
+</table>

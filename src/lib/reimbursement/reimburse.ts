@@ -1,4 +1,5 @@
 import { Readable } from 'node:stream';
+import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import type { drive_v3 } from 'googleapis';
 import { env } from '../email';
 import {
@@ -11,6 +12,7 @@ import {
 } from '../sheets';
 import {
   splitByWeights as splitByWeightsImpl,
+  expenseRowLabel,
   type SplitEntry,
   type SplitShare,
 } from './reimbursePure';
@@ -19,6 +21,7 @@ import {
 // from one place; the client-side Vue form imports splitByWeights directly from
 // reimbursePure.ts to keep googleapis out of the client bundle.
 export const splitByWeights = splitByWeightsImpl;
+export { expenseRowLabel };
 export type { SplitEntry, SplitShare };
 
 // Reimbursement workflow: members submit a team expense (receipt + a weighted
@@ -63,6 +66,31 @@ export type ReimburseStatus = 'submitted' | 'approved' | 'paid' | 'rejected';
  *  dues); 'bankTransfer' = vorstand wires it. Preference only — the site does
  *  not perform the payout itself. */
 export type PayoutMethod = 'credit' | 'bankTransfer';
+
+/**
+ * The reimbursement summary rendered into the first emails (submitter
+ * confirmation + vorstand notification) as an HTML card — mirrors the join flow's
+ * renderMembershipEmail. JSON-serializable; the email component imports this as a
+ * type only (no runtime import of googleapis into the email render).
+ */
+export interface ReimburseEmailSummary {
+  id: string;
+  submitterName: string;
+  submitterEmail: string;
+  expenseDate: string;
+  description: string;
+  total: number;
+  split: SplitShare[];
+  payoutMethod: PayoutMethod;
+  receiptCount: number;
+  /** Drive webViewLinks for the uploaded receipts (shown to the admin). */
+  receiptLinks: string[];
+  /** Whether the receipts were actually uploaded to Drive (false in a dry run).
+   *  Optional — defaults to true. The member variant uses it to note a dry run on
+   *  the post-submit done page; the admin variant derives dry-run from empty
+   *  receiptLinks. */
+  receiptUploaded?: boolean;
+}
 
 export interface ReimbursementRecord {
   id: string;
@@ -334,7 +362,7 @@ export async function stageApprovedExpenseRow(
   const { resolved, unresolved } = resolveMemberColumns(rows, input.split.map((s) => s.name));
   if (unresolved.length > 0) return { dryRun: false, unresolved, written: false };
 
-  const label = input.description;
+  const label = expenseRowLabel(input.id, input.expenseDate, input.description);
   // Pad to the debt sheet's full header width so the row aligns column-for-column
   // when pasted, regardless of which members are in the split.
   const width = rows[0].length;
@@ -431,4 +459,32 @@ export async function uploadReceiptToDrive(
   const link = res.data.webViewLink ?? `https://drive.google.com/file/d/${res.data.id}/view`;
   console.log('[reimburse] uploaded receipt:', name, '→', link);
   return { dryRun: false, link };
+}
+
+// Re-use one Container instance across renders (mirrors renderMembershipEmail).
+let cachedContainer: Awaited<ReturnType<typeof AstroContainer.create>> | null = null;
+async function getContainer() {
+  if (!cachedContainer) cachedContainer = await AstroContainer.create();
+  return cachedContainer;
+}
+
+/**
+ * Render the reimbursement summary as a full HTML document string, using Astro's
+ * Container API to render ReimbursementEmail.astro server-side. `variant` is
+ * 'member' (submitter confirmation — no Drive links) or 'admin' (vorstand
+ * notification — with Drive receipt links + the admin review URL).
+ *
+ * The .astro component is imported dynamically (not at module top level) so that
+ * importing this module in a plain Vitest environment (no Astro Vite plugin)
+ * doesn't try to parse the .astro file — the import is only resolved when this
+ * function is actually called, which never happens during the unit tests.
+ */
+export async function renderReimbursementEmail(
+  summary: ReimburseEmailSummary,
+  variant: 'member' | 'admin',
+  adminUrl?: string,
+): Promise<string> {
+  const container = await getContainer();
+  const { default: ReimbursementEmail } = await import('../../emails/ReimbursementEmail.astro');
+  return container.renderToString(ReimbursementEmail, { props: { summary, variant, adminUrl } });
 }

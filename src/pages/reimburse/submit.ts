@@ -5,8 +5,11 @@ import { parseAmount } from '../../lib/sheets';
 import {
   appendReimbursement,
   nextReimburseId,
+  renderReimbursementEmail,
   uploadReceiptToDrive,
   splitByWeights,
+  type PayoutMethod,
+  type ReimburseEmailSummary,
   type SplitEntry,
 } from '../../lib/reimbursement/reimburse';
 import { storeReimburse } from '../../lib/reimbursement/reimburseStore';
@@ -116,23 +119,28 @@ export const POST: APIRoute = async ({ request, url }) => {
     payoutMethod,
   });
 
-  // Email the submitter a confirmation.
-  const payoutWord = payoutMethod === 'credit' ? 'as credit in the Guthaben list' : 'by bank transfer';
-  await sendEmail(
-    email,
-    { text: `We received your reimbursement request ${id} (${total.toLocaleString('de-DE')} € for "${description}"). You asked to be reimbursed ${payoutWord}. The vorstand will review it and email you when it's approved, and again when it's paid.` },
-    'Ultimate Vienna — reimbursement received',
-  );
+  // Email the submitter a confirmation (rendered HTML summary) and notify the
+  // vorstand with the same card (admin variant: with receipt links + review URL).
+  const summary: ReimburseEmailSummary = {
+    id,
+    submitterName,
+    submitterEmail: email,
+    expenseDate,
+    description,
+    total,
+    split: shares,
+    payoutMethod: payoutMethod as PayoutMethod,
+    receiptCount: files.length,
+    receiptLinks,
+    receiptUploaded: receiptsUploaded,
+  };
+  const adminUrl = `${url.origin}/reimburse/admin`;
 
-  // Notify the vorstand.
+  await sendEmail(email, { html: await renderReimbursementEmail(summary, 'member') }, 'Ultimate Vienna — reimbursement received');
+
   const notif = env('NOTIFICATION_EMAIL');
   if (notif) {
-    const splitLines = shares.map((s) => `  ${s.name} (weight ${s.weight}): ${s.amount.toLocaleString('de-DE')} €`).join('\n');
-    await sendEmail(
-      notif,
-      { text: `New reimbursement request ${id} from ${submitterName} <${email}>: "${description}", ${total.toLocaleString('de-DE')} € (expense date ${expenseDate}).\nPayout: ${payoutMethod === 'credit' ? 'credit (Guthaben)' : 'bank transfer'}\n\nSplit:\n${splitLines}\n\nReview at ${url.origin}/reimburse/admin` },
-      'New reimbursement request',
-    );
+    await sendEmail(notif, { html: await renderReimbursementEmail(summary, 'admin', adminUrl) }, 'New reimbursement request');
   }
 
   const token = storeReimburse({
