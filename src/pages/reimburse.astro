@@ -1,0 +1,24 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ReimburseForm from '../components/ReimburseForm.vue';
+
+// Static: the form is a client-side Vue island; no server data needed here.
+export const prerender = true;
+---
+
+<BaseLayout title="Request a reimbursement — Ultimate Vienna" current="reimburse">
+  <section class="relative min-h-[260px] flex items-end overflow-hidden bg-primary">
+    <div class="relative z-1 max-w-[1120px] w-full mx-auto px-6 py-12">
+      <span class="inline-block text-[.7rem] font-semibold uppercase tracking-widest text-white bg-accent px-3 py-1 rounded mb-3">Money</span>
+      <h1 class="font-heading text-[2.5rem] text-white mb-1">Request a reimbursement</h1>
+      <p class="text-white/75 text-[1.05rem]">Paid for something on behalf of the club? Submit the receipt and how to split it &mdash; the vorstand reviews and reimburses you.</p>
+    </div>
+  </section>
+
+  <section class="max-w-[640px] mx-auto px-6 py-16">
+    <div class="bg-surface rounded-lg p-7 shadow-sm border-l-4 border-accent">
+      <p class="text-text-light text-[1.05rem] mb-6">Fields marked with * are required. Attach the receipt and list the people the cost is split between (you can include yourself).</p>
+      <ReimburseForm client:load />
+    </div>
+  </section>
+</BaseLayout>

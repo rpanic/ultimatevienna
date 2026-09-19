@@ -1,4 +1,4 @@
-import { google, type sheets_v4 } from 'googleapis';
+import { google, type sheets_v4, type drive_v3 } from 'googleapis';
 
 // Google Sheets client backed by a service account.
 //
@@ -98,7 +98,7 @@ export type Team = 'echo' | 'foxes';
 // Re-use a single authorized client across calls.
 let cachedClient: sheets_v4.Sheets | null = null;
 
-function getClient(): sheets_v4.Sheets {
+export function getClient(): sheets_v4.Sheets {
   if (cachedClient) return cachedClient;
   const auth = new google.auth.JWT({
     email: CLIENT_EMAIL,
@@ -107,6 +107,23 @@ function getClient(): sheets_v4.Sheets {
   });
   cachedClient = google.sheets({ version: 'v4', auth });
   return cachedClient;
+}
+
+// Re-use a single authorized Drive client across calls. Shares the same service
+// account credentials as the Sheets client (a separate JWT instance scoped to
+// drive.file — least privilege: only files the app creates). Used by
+// reimburse.ts to upload receipts to a shared Drive folder.
+let cachedDriveClient: drive_v3.Drive | null = null;
+
+export function getDriveClient(): drive_v3.Drive {
+  if (cachedDriveClient) return cachedDriveClient;
+  const auth = new google.auth.JWT({
+    email: CLIENT_EMAIL,
+    key: PRIVATE_KEY,
+    scopes: ['https://www.googleapis.com/auth/drive.file'],
+  });
+  cachedDriveClient = google.drive({ version: 'v3', auth });
+  return cachedDriveClient;
 }
 
 // Fetch every data row (excluding the header row) from the Members tab as arrays
@@ -305,7 +322,7 @@ function normalizeName(s: string): string {
  * Handles "50", "50,00", "1.234,56", "€ 50,00", "-10,00" (dot = thousands,
  * comma = decimal). Returns null for empty or non-numeric cells.
  */
-function parseAmount(raw: string): number | null {
+export function parseAmount(raw: string): number | null {
   const s = raw.trim().replace(/[^0-9,.\-]/g, '');
   if (!s || s === '-') return null;
   let norm = s;
@@ -327,7 +344,7 @@ function parseAmount(raw: string): number | null {
  * the sheet is empty, the name is blank, or no header cell matches. Shared by
  * findCreditInSheet and findDebtItems so the column search lives in one place.
  */
-function findMemberColumn(rows: string[][], fullName: string): number {
+export function findMemberColumn(rows: string[][], fullName: string): number {
   const target = normalizeName(fullName);
   if (!target || rows.length === 0) return -1;
   const header = rows[0];

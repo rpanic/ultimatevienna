@@ -1,0 +1,77 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getReimburse } from '../../lib/reimburseStore';
+
+// On-demand so we can read the result token from the query string at request
+// time (the submit endpoint stashed the submission summary under it).
+export const prerender = false;
+
+const token = Astro.url.searchParams.get('t');
+const info = getReimburse(token);
+
+function fmt(n: number): string {
+  return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+---
+
+<BaseLayout title="Reimbursement submitted — Ultimate Vienna" current="reimburse">
+  <section class="max-w-[640px] mx-auto px-6 py-16">
+    <p class="text-accent text-[.8rem] font-semibold uppercase tracking-widest mb-4">Request submitted</p>
+
+    {info ? (
+      <div class="bg-surface rounded-lg p-8 shadow-sm border-l-4 border-accent mb-8">
+        <p class="text-text text-[1.05rem] mb-1">Thanks {info.submitterName.split(' ')[0]}!</p>
+        <p class="text-text-light text-[.95rem] mb-6">Your reimbursement request has been received and the vorstand has been notified. We&rsquo;ll email <span class="text-text font-medium">{info.submitterEmail}</span> when it&rsquo;s approved and again when it&rsquo;s paid.</p>
+
+        <dl class="text-[.9rem] space-y-2 mb-6">
+          <div class="flex justify-between gap-4">
+            <dt class="text-text-light">Request ID</dt>
+            <dd class="text-text font-medium">{info.id}</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="text-text-light">Expense date</dt>
+            <dd class="text-text">{info.expenseDate}</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="text-text-light">Description</dt>
+            <dd class="text-text text-right">{info.description}</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="text-text-light">Total</dt>
+            <dd class="text-text font-medium">{fmt(info.total)} €</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="text-text-light">Receipt(s)</dt>
+            <dd class="text-text">{info.receiptUploaded ? `${info.receiptCount} file${info.receiptCount === 1 ? '' : 's'} uploaded` : `${info.receiptCount} file${info.receiptCount === 1 ? '' : 's'} — not uploaded (dry run)`}</dd>
+          </div>
+        </dl>
+
+        <p class="text-[.8rem] font-semibold uppercase tracking-wider text-text-light mb-2">Split</p>
+        <ul class="list-none space-y-1 text-[.9rem] mb-2">
+          {info.split.map((s) => (
+            <li class="flex justify-between">
+              <span class="text-text">{s.name}</span>
+              <span class="text-text font-medium">{fmt(s.amount)} €</span>
+            </li>
+          ))}
+        </ul>
+
+        <p class="text-[.8rem] text-text-light mt-4 pt-4 border-t border-border">
+          Status: <span class="text-text font-semibold capitalize">{info.status}</span>
+        </p>
+      </div>
+    ) : (
+      <div class="bg-surface rounded-lg p-8 shadow-sm border-l-4 border-accent mb-8">
+        <p class="text-text leading-relaxed">
+          Thanks &mdash; we&rsquo;ve received your request and sent a confirmation to your
+          email. If you don&rsquo;t see it shortly, check your spam folder or write to
+          <a href="mailto:vorstand@ultimatevienna.net" class="text-accent font-semibold">vorstand@ultimatevienna.net</a>.
+        </p>
+      </div>
+    )}
+
+    <a href="/" class="inline-flex items-center px-6 py-[.65rem] rounded-lg font-semibold text-[.9rem] bg-accent text-white hover:bg-accent-light transition-colors duration-250">
+      &larr; Back to home
+    </a>
+  </section>
+</BaseLayout>

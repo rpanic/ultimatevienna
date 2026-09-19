@@ -1,0 +1,102 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { listReimbursements } from '../../lib/reimburse';
+
+// On-demand: reads all reimbursement rows at request time. Basic auth is
+// enforced by src/middleware.ts for every /reimburse/admin* path, so by the
+// time this renders the visitor is already authenticated.
+export const prerender = false;
+
+const reimbursements = await listReimbursements();
+
+function fmt(n: number): string {
+  return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+const statusClasses: Record<string, string> = {
+  submitted: 'bg-accent/10 text-accent border-accent/30',
+  approved: 'bg-blue-100 text-blue-700 border-blue-300',
+  paid: 'bg-green-100 text-green-700 border-green-300',
+  rejected: 'bg-red-100 text-red-700 border-red-300',
+};
+---
+
+<BaseLayout title="Reimbursements — Admin" current="reimburse">
+  <section class="max-w-[1120px] mx-auto px-6 py-16">
+    <h2 class="font-heading text-4xl text-primary mb-2">Reimbursements</h2>
+    <p class="text-text-light text-[1.05rem] mb-10">Review requests, approve them into the debt sheet, and mark them paid once reimbursed.</p>
+
+    {reimbursements.length === 0 ? (
+      <div class="bg-surface rounded-lg p-8 shadow-sm text-center">
+        <p class="text-text-light text-[.95rem]">No reimbursement requests yet.</p>
+      </div>
+    ) : (
+      <div class="space-y-4">
+        {reimbursements.map((r) => (
+          <div class="bg-surface rounded-lg p-6 shadow-sm border-l-4 border-border">
+            <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
+              <div>
+                <p class="text-[.8rem] font-mono text-text-light">{r.id}</p>
+                <h3 class="text-[1.05rem] text-primary font-semibold">{r.description}</h3>
+                <p class="text-[.85rem] text-text-light">
+                  {r.expenseDate} &middot; {r.submitterName} &lt;{r.submitterEmail}&gt;
+                </p>
+              </div>
+              <div class="flex flex-col items-end gap-2">
+                <span class={`text-[.75rem] font-semibold uppercase tracking-wider px-2.5 py-1 rounded border ${statusClasses[r.status] ?? statusClasses.submitted}`}>
+                  {r.status}
+                </span>
+                <span class="text-[1.15rem] font-semibold text-text">{fmt(r.total)} €</span>
+                {r.receiptLinks.length > 0 ? (
+                  <div class="flex flex-col items-end gap-1">
+                    {r.receiptLinks.map((href) => (
+                      <a href={href} target="_blank" rel="noopener" class="text-[.8rem] font-semibold text-accent hover:text-accent-light transition-colors duration-250 underline">View receipt &nearr;</a>
+                    ))}
+                  </div>
+                ) : (
+                  <span class="text-[.8rem] text-text-light">No receipt (dry run)</span>
+                )}
+              </div>
+            </div>
+
+            <p class="text-[.8rem] font-semibold uppercase tracking-wider text-text-light mb-2">Split</p>
+            <ul class="list-none flex flex-wrap gap-x-6 gap-y-1 text-[.85rem] mb-4">
+              {r.split.map((s) => (
+                <li><span class="text-text">{s.name}</span> <span class="text-text-light">({s.weight})</span> &rarr; <span class="text-text font-medium">{fmt(s.amount)} €</span></li>
+              ))}
+            </ul>
+
+            {(r.status === 'submitted') && (
+              <div class="flex gap-3 pt-3 border-t border-border">
+                <form method="POST" action="/reimburse/admin/action">
+                  <input type="hidden" name="id" value={r.id} />
+                  <input type="hidden" name="action" value="approve" />
+                  <button type="submit" class="px-4 py-[.5rem] rounded-lg font-semibold text-[.85rem] bg-accent text-white hover:bg-accent-light transition-colors duration-250">Approve &amp; write to debt sheet</button>
+                </form>
+                <form method="POST" action="/reimburse/admin/action">
+                  <input type="hidden" name="id" value={r.id} />
+                  <input type="hidden" name="action" value="reject" />
+                  <button type="submit" class="px-4 py-[.5rem] rounded-lg font-semibold text-[.85rem] border border-border text-text-light hover:text-text hover:border-text transition-colors duration-250">Reject</button>
+                </form>
+              </div>
+            )}
+
+            {(r.status === 'approved') && (
+              <div class="flex gap-3 pt-3 border-t border-border">
+                <form method="POST" action="/reimburse/admin/action">
+                  <input type="hidden" name="id" value={r.id} />
+                  <input type="hidden" name="action" value="pay" />
+                  <button type="submit" class="px-4 py-[.5rem] rounded-lg font-semibold text-[.85rem] bg-green-600 text-white hover:bg-green-700 transition-colors duration-250">Mark paid</button>
+                </form>
+              </div>
+            )}
+
+            {(r.status === 'approved' || r.status === 'paid') && r.approvedAt && (
+              <p class="text-[.8rem] text-text-light mt-3">Approved {r.approvedAt}{r.paidAt ? ` · Paid ${r.paidAt}` : ''}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    )}
+  </section>
+</BaseLayout>
