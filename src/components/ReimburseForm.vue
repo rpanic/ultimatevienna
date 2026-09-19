@@ -18,6 +18,10 @@ const form = reactive({
   description: '',
   total: '', // raw string; parsed for the preview, server parses authoritatively
   files: [] as File[],
+  // How the submitter wants to be reimbursed — preference only (vorstand acts on
+  // it: adds credit to the Guthaben sheet, or wires a bank transfer). Empty
+  // forces an explicit choice in validate().
+  payoutMethod: '' as '' | 'credit' | 'bankTransfer',
   consent: false,
   // Attestations about the receipt — client-side gates (like consent) that make
   // the member confirm the document is usable before submitting, so vorstand
@@ -86,6 +90,7 @@ function validate(): string | null {
     if (f.size > MAX_FILE_MB * 1024 * 1024) return `"${f.name}" is too large (max ${MAX_FILE_MB} MB).`;
     if (!f.type.startsWith('image/') && f.type !== 'application/pdf') return `"${f.name}" is not an image or PDF.`;
   }
+  if (!form.payoutMethod) return 'Please choose how you would like to be reimbursed.';
   if (!form.receiptToUvie) return 'Please confirm the receipt is made out to Ultimate Vienna.';
   if (!form.isReceipt) return 'Please confirm the document is a receipt (not a payment confirmation).';
   if (!form.consent) return 'Please accept the privacy policy to continue.';
@@ -112,6 +117,7 @@ async function onSubmit() {
     fd.append('expenseDate', form.expenseDate);
     fd.append('description', form.description.trim());
     fd.append('total', form.total.trim());
+    fd.append('payoutMethod', form.payoutMethod);
     fd.append('consent', 'on');
     fd.append('website', form.website); // honeypot
     for (const f of form.files) fd.append('receipt', f, f.name);
@@ -289,6 +295,24 @@ function fmt(n: number): string {
           Sum: <span class="font-semibold text-text">{{ fmt(sharesSum) }} €</span>
           <span v-if="parsedTotal > 0" class="ml-1">/ receipt total {{ fmt(parsedTotal) }} €</span>
         </p>
+      </div>
+    </div>
+
+    <div>
+      <span class="form-label">How would you like to be reimbursed? *</span>
+      <div class="flex flex-col gap-2">
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input v-model="form.payoutMethod" type="radio" value="credit" class="mt-[.2rem] h-4 w-4 accent-[var(--color-accent)]" />
+          <span class="text-[.9rem] text-text">
+            As <strong>credit</strong> in the club's Guthaben sheet.
+          </span>
+        </label>
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input v-model="form.payoutMethod" type="radio" value="bankTransfer" class="mt-[.2rem] h-4 w-4 accent-[var(--color-accent)]" />
+          <span class="text-[.9rem] text-text">
+            <strong>Bank transfer</strong> to my account.
+          </span>
+        </label>
       </div>
     </div>
 

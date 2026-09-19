@@ -74,9 +74,12 @@ export const POST: APIRoute = async ({ request, redirect }) => {
         return errorPage('Cannot pay', `Reimbursement ${id} must be approved first (it is ${record.status}).`);
       }
       await updateReimburseStatus(id, { status: 'paid', paidAt: new Date().toISOString() });
+      const paidLine = record.payoutMethod === 'credit'
+        ? 'has been added as credit to your Guthaben account'
+        : 'has been paid to your bank account';
       await sendEmail(
         record.submitterEmail,
-        { text: `Your reimbursement request ${id} (${record.total.toLocaleString('de-DE')} € for "${record.description}") has been paid. Thank you!` },
+        { text: `Your reimbursement request ${id} (${record.total.toLocaleString('de-DE')} € for "${record.description}") ${paidLine}. Thank you!` },
         'Ultimate Vienna — reimbursement paid',
       );
     } else if (action === 'reject') {

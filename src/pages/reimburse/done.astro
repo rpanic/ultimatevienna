@@ -41,6 +41,10 @@ function fmt(n: number): string {
             <dd class="text-text font-medium">{fmt(info.total)} €</dd>
           </div>
           <div class="flex justify-between gap-4">
+            <dt class="text-text-light">Payout</dt>
+            <dd class="text-text">{info.payoutMethod === 'credit' ? 'Credit in Guthaben list' : 'Bank transfer'}</dd>
+          </div>
+          <div class="flex justify-between gap-4">
             <dt class="text-text-light">Receipt(s)</dt>
             <dd class="text-text">{info.receiptUploaded ? `${info.receiptCount} file${info.receiptCount === 1 ? '' : 's'} uploaded` : `${info.receiptCount} file${info.receiptCount === 1 ? '' : 's'} — not uploaded (dry run)`}</dd>
           </div>

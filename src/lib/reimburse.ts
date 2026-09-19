@@ -51,6 +51,12 @@ export function isReimburseConfigured(): boolean {
 
 export type ReimburseStatus = 'submitted' | 'approved' | 'paid' | 'rejected';
 
+/** How the submitter chose to be reimbursed for the full total. 'credit' =
+ *  vorstand adds it as credit to the Guthaben sheet by hand (offsets future
+ *  dues); 'bankTransfer' = vorstand wires it. Preference only — the site does
+ *  not perform the payout itself. */
+export type PayoutMethod = 'credit' | 'bankTransfer';
+
 export interface ReimbursementRecord {
   id: string;
   submittedAt: string;
@@ -65,6 +71,7 @@ export interface ReimbursementRecord {
   status: ReimburseStatus;
   approvedAt?: string;
   paidAt?: string;
+  payoutMethod: PayoutMethod;
 }
 
 // --- Member-column resolution (needs sheets.ts findMemberColumn) -----------
@@ -96,11 +103,12 @@ export function resolveMemberColumns(rows: string[][], names: string[]): Resolve
 
 // Column layout of the Reimbursements tab (header in row 1):
 //   A ID | B SubmittedAt | C SubmitterName | D SubmitterEmail | E ExpenseDate
-//   F Description | G Total | H Split(JSON) | I ReceiptLink | J Status
-//   K ApprovedAt | L PaidAt
+//   F Description | G Total | H Split(JSON) | I ReceiptLinks | J Status
+//   K ApprovedAt | L PaidAt | M PayoutMethod (credit | bankTransfer)
 const COL = {
   id: 0, submittedAt: 1, submitterName: 2, submitterEmail: 3, expenseDate: 4,
   description: 5, total: 6, split: 7, receiptLink: 8, status: 9, approvedAt: 10, paidAt: 11,
+  payoutMethod: 12,
 } as const;
 
 function rowToRecord(r: string[]): ReimbursementRecord | null {
@@ -138,6 +146,10 @@ function rowToRecord(r: string[]): ReimbursementRecord | null {
     status: (String(r[COL.status] ?? 'submitted') as ReimburseStatus),
     approvedAt: r[COL.approvedAt] ? String(r[COL.approvedAt]) : undefined,
     paidAt: r[COL.paidAt] ? String(r[COL.paidAt]) : undefined,
+    // Pre-existing rows (written before this field) have no M value; they
+    // defaulted to an external transfer, so coerce unknown/empty to bankTransfer.
+    payoutMethod:
+      String(r[COL.payoutMethod] ?? '').trim() === 'credit' ? 'credit' : 'bankTransfer',
   };
 }
 
@@ -167,6 +179,7 @@ export interface NewReimbursement {
   total: number;
   split: SplitShare[];
   receiptLink: string;
+  payoutMethod: PayoutMethod;
 }
 
 /** Append a new reimbursement row with Status = "submitted". */
@@ -184,6 +197,7 @@ export async function appendReimbursement(rec: NewReimbursement): Promise<{ dryR
     'submitted',
     '',
     '',
+    rec.payoutMethod,
   ]];
   if (!isReimburseConfigured()) {
     console.warn('[reimburse] not configured — dry run. Would append:', rec);
@@ -207,7 +221,7 @@ export async function listReimbursements(): Promise<ReimbursementRecord[]> {
   const sheets = getClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: REIMBURSE_SPREADSHEET_ID,
-    range: `${REIMBURSE_TAB}!A2:L`,
+    range: `${REIMBURSE_TAB}!A2:M`,
   });
   const rows = (res.data.values ?? []) as string[][];
   const out: ReimbursementRecord[] = [];

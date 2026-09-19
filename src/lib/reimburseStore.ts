@@ -1,4 +1,4 @@
-import type { SplitShare } from './reimburse';
+import type { SplitShare, PayoutMethod } from './reimburse';
 
 // Short-lived, in-memory store that hands a reimbursement submission summary
 // from the submit endpoint to the post-submit done page — the same pattern as
@@ -24,6 +24,7 @@ export interface ReimburseSubmission {
   receiptCount: number;
   receiptUploaded: boolean;
   status: 'submitted';
+  payoutMethod: PayoutMethod;
 }
 
 const store = new Map<string, { info: ReimburseSubmission; expires: number }>();

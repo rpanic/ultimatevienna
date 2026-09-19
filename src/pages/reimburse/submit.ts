@@ -47,6 +47,7 @@ export const POST: APIRoute = async ({ request, url }) => {
   const expenseDate = get('expenseDate');
   const description = get('description');
   const totalRaw = get('total');
+  const payoutMethod = get('payoutMethod');
   const consent = String(fd.get('consent') ?? '');
 
   if (!firstName || !lastName) return json({ ok: false, error: 'Please enter your name.' }, 400);
@@ -55,6 +56,9 @@ export const POST: APIRoute = async ({ request, url }) => {
   if (!description) return json({ ok: false, error: 'Please describe the expense.' }, 400);
   const total = parseAmount(totalRaw);
   if (total === null || total <= 0) return json({ ok: false, error: 'Please enter the receipt total (must be greater than 0).' }, 400);
+  if (payoutMethod !== 'credit' && payoutMethod !== 'bankTransfer') {
+    return json({ ok: false, error: 'Please choose how you would like to be reimbursed.' }, 400);
+  }
   if (!consent) return json({ ok: false, error: 'Please accept the privacy policy to continue.' }, 400);
 
   // Split: splitName / splitWeight are sent as parallel repeated fields.
@@ -109,12 +113,14 @@ export const POST: APIRoute = async ({ request, url }) => {
     total,
     split: shares,
     receiptLink,
+    payoutMethod,
   });
 
   // Email the submitter a confirmation.
+  const payoutWord = payoutMethod === 'credit' ? 'as credit in the Guthaben list' : 'by bank transfer';
   await sendEmail(
     email,
-    { text: `We received your reimbursement request ${id} (${total.toLocaleString('de-DE')} € for "${description}"). The vorstand will review it and email you when it's approved, and again when it's paid.` },
+    { text: `We received your reimbursement request ${id} (${total.toLocaleString('de-DE')} € for "${description}"). You asked to be reimbursed ${payoutWord}. The vorstand will review it and email you when it's approved, and again when it's paid.` },
     'Ultimate Vienna — reimbursement received',
   );
 
@@ -124,7 +130,7 @@ export const POST: APIRoute = async ({ request, url }) => {
     const splitLines = shares.map((s) => `  ${s.name} (weight ${s.weight}): ${s.amount.toLocaleString('de-DE')} €`).join('\n');
     await sendEmail(
       notif,
-      { text: `New reimbursement request ${id} from ${submitterName} <${email}>: "${description}", ${total.toLocaleString('de-DE')} € (expense date ${expenseDate}).\n\nSplit:\n${splitLines}\n\nReview at ${url.origin}/reimburse/admin` },
+      { text: `New reimbursement request ${id} from ${submitterName} <${email}>: "${description}", ${total.toLocaleString('de-DE')} € (expense date ${expenseDate}).\nPayout: ${payoutMethod === 'credit' ? 'credit (Guthaben)' : 'bank transfer'}\n\nSplit:\n${splitLines}\n\nReview at ${url.origin}/reimburse/admin` },
       'New reimbursement request',
     );
   }
@@ -140,6 +146,7 @@ export const POST: APIRoute = async ({ request, url }) => {
     receiptCount: files.length,
     receiptUploaded: receiptsUploaded,
     status: 'submitted',
+    payoutMethod,
   });
 
   return json({ ok: true, token });
