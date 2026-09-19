@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { listReimbursements } from '../../lib/reimbursement/reimburse';
+import { listReimbursements, reimburseSheetUrl, reimburseDebtTabName } from '../../lib/reimbursement/reimburse';
 
 // On-demand: reads all reimbursement rows at request time. Basic auth is
 // enforced by src/middleware.ts for every /reimburse/admin* path, so by the
@@ -8,6 +8,8 @@ import { listReimbursements } from '../../lib/reimbursement/reimburse';
 export const prerender = false;
 
 const reimbursements = await listReimbursements();
+const sheetUrl = reimburseSheetUrl();
+const debtTabName = reimburseDebtTabName();
 
 function fmt(n: number): string {
   return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -24,7 +26,7 @@ const statusClasses: Record<string, string> = {
 <BaseLayout title="Reimbursements — Admin" current="reimburse">
   <section class="max-w-[1120px] mx-auto px-6 py-16">
     <h2 class="font-heading text-4xl text-primary mb-2">Reimbursements</h2>
-    <p class="text-text-light text-[1.05rem] mb-10">Review requests, approve them into the debt sheet, and mark them paid once reimbursed.</p>
+    <p class="text-text-light text-[1.05rem] mb-10">Review requests, approve them to stage a Guthaben row, paste the row into the debt sheet, then mark them paid once reimbursed.</p>
 
     {reimbursements.length === 0 ? (
       <div class="bg-surface rounded-lg p-8 shadow-sm text-center">
@@ -32,7 +34,7 @@ const statusClasses: Record<string, string> = {
       </div>
     ) : (
       <div class="space-y-4">
-        {reimbursements.map((r) => (
+        {reimbursements.reverse().map((r) => (
           <div class="bg-surface rounded-lg p-6 shadow-sm border-l-4 border-border">
             <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
               <div>
@@ -74,7 +76,7 @@ const statusClasses: Record<string, string> = {
                 <form method="POST" action="/reimburse/admin/action">
                   <input type="hidden" name="id" value={r.id} />
                   <input type="hidden" name="action" value="approve" />
-                  <button type="submit" class="px-4 py-[.5rem] rounded-lg font-semibold text-[.85rem] bg-accent text-white hover:bg-accent-light transition-colors duration-250">Approve &amp; write to debt sheet</button>
+                  <button type="submit" class="px-4 py-[.5rem] rounded-lg font-semibold text-[.85rem] bg-accent text-white hover:bg-accent-light transition-colors duration-250">Approve</button>
                 </form>
                 <form method="POST" action="/reimburse/admin/action">
                   <input type="hidden" name="id" value={r.id} />
@@ -85,12 +87,21 @@ const statusClasses: Record<string, string> = {
             )}
 
             {(r.status === 'approved') && (
-              <div class="flex gap-3 pt-3 border-t border-border">
-                <form method="POST" action="/reimburse/admin/action">
-                  <input type="hidden" name="id" value={r.id} />
-                  <input type="hidden" name="action" value="pay" />
-                  <button type="submit" class="px-4 py-[.5rem] rounded-lg font-semibold text-[.85rem] bg-green-600 text-white hover:bg-green-700 transition-colors duration-250">Mark paid</button>
-                </form>
+              <div class="pt-3 border-t border-border space-y-3">
+                <p class="text-[.8rem] text-text-light">
+                  A row to paste into the Guthaben list is in the &ldquo;{debtTabName}&rdquo; tab of the Reimbursement sheet.
+                  {sheetUrl && (
+                    <a href={sheetUrl} target="_blank" rel="noopener" class="text-accent font-semibold hover:text-accent-light transition-colors duration-250 underline ml-1">Open sheet &nearr;</a>
+                  )}
+                  Copy that row and paste it into the debt sheet, then mark paid.
+                </p>
+                <div class="flex gap-3">
+                  <form method="POST" action="/reimburse/admin/action">
+                    <input type="hidden" name="id" value={r.id} />
+                    <input type="hidden" name="action" value="pay" />
+                    <button type="submit" class="px-4 py-[.5rem] rounded-lg font-semibold text-[.85rem] bg-green-600 text-white hover:bg-green-700 transition-colors duration-250">Mark paid</button>
+                  </form>
+                </div>
               </div>
             )}
 

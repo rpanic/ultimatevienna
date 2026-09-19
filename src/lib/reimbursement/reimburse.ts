@@ -11,7 +11,6 @@ import {
 } from '../sheets';
 import {
   splitByWeights as splitByWeightsImpl,
-  expenseRowLabel as expenseRowLabelImpl,
   type SplitEntry,
   type SplitShare,
 } from './reimbursePure';
@@ -20,21 +19,24 @@ import {
 // from one place; the client-side Vue form imports splitByWeights directly from
 // reimbursePure.ts to keep googleapis out of the client bundle.
 export const splitByWeights = splitByWeightsImpl;
-export const expenseRowLabel = expenseRowLabelImpl;
 export type { SplitEntry, SplitShare };
 
 // Reimbursement workflow: members submit a team expense (receipt + a weighted
 // split between people); vorstand approves on a Basic-auth-protected admin page;
-// on approval the split is written as ONE row into the existing credit/debt
-// sheet (the Guthabenstand formula already sums it); payment status is tracked
-// in a SEPARATE "Reimbursements" spreadsheet. Receipts are auto-filed into a
-// Drive folder by the same service account used for Sheets.
+// on approval the split is staged as ONE ready-to-paste row in a tab of the
+// Reimbursements spreadsheet (the service account can't write to the debt sheet,
+// so the admin copies that row into the Guthaben sheet by hand); payment status
+// is tracked in the same "Reimbursements" spreadsheet. Receipts are auto-filed
+// into a Drive folder by the same service account used for Sheets.
 //
 // Configuration (env vars — see .env.example):
-//   REIMBURSE_SPREADSHEET_ID  — the Reimbursements spreadsheet (one row per request)
-//   REIMBURSE_TAB             — tab name (default: "Reimbursements")
+//   REIMBURSE_SPREADSHEET_ID  — the Reimbursements spreadsheet (requests + staged rows)
+//   REIMBURSE_TAB             — requests tab (default: "Reimbursements")
+//   REIMBURSE_DEBT_TAB        — staging tab for rows to paste into the debt sheet (default: "DebtRows")
 //   REIMBURSE_DRIVE_FOLDER_ID — Drive folder to file receipts into
 //   CREDIT_SHEET_SPREADSHEET_ID / CREDIT_SHEET_TAB — the existing debt sheet
+//       (READ-ONLY for the service account — Viewer access — used only to resolve
+//       member columns; the SA does NOT write to it)
 //   (admin auth: ADMIN_USER / ADMIN_PASS, handled in middleware.ts)
 //
 // Like sheets.ts, when REIMBURSE_* env is unset the functions run in a dry-run
@@ -43,6 +45,11 @@ export type { SplitEntry, SplitShare };
 
 const REIMBURSE_SPREADSHEET_ID = env('REIMBURSE_SPREADSHEET_ID');
 const REIMBURSE_TAB = env('REIMBURSE_TAB') ?? 'Reimbursements';
+// Tab (inside the Reimbursements spreadsheet) where approved expense rows are
+// staged for the admin to copy-paste into the debt/Guthaben sheet. The service
+// account has write access to the Reimbursements spreadsheet but NOT to the debt
+// sheet, so the row is staged here instead of appended directly.
+const DEBT_TAB = env('REIMBURSE_DEBT_TAB') ?? 'DebtRows';
 const DRIVE_FOLDER_ID = env('REIMBURSE_DRIVE_FOLDER_ID');
 
 export function isReimburseConfigured(): boolean {
@@ -277,7 +284,7 @@ export async function updateReimburseStatus(
   return { dryRun: false, found: true };
 }
 
-// --- Debt-sheet write on approval ------------------------------------------
+// --- Stage the approved expense row (for manual paste into the debt sheet) ---
 
 export interface ExpenseWriteInput {
   id: string;
@@ -294,53 +301,80 @@ export interface ExpenseWriteResult {
 }
 
 /**
- * On approval, append ONE row to the existing credit/debt sheet: col A =
- * "<date> <description> (#<ID>)", and each resolved member's column = their share
- * (a number = spending; the Guthabenstand formula sums it). No partial write: if
- * any split name doesn't resolve to a member column, nothing is written and the
- * unresolved names are returned so the admin can fix them. Dry-run (off / no
- * sheet) logs instead of writing. The submitter is reimbursed the full total by
- * the club when marked "paid" — no +entry for the payer here.
+ * On approval, build the ONE row that belongs in the credit/debt sheet — col A =
+ * "<date> <description> (#<ID>)", each resolved member's column = their share (a
+ * number = spending; the Guthabenstand formula sums it) — and APPEND it to the
+ * staging tab (REIMBURSE_DEBT_TAB) of the Reimbursements spreadsheet, ready for
+ * the admin to copy-paste into the Guthaben sheet. The service account has
+ * read-only access to the debt sheet (used here only to resolve member columns
+ * via fetchCreditRows / findMemberColumn) and no write access, which is why the
+ * row is staged in the Reimbursements sheet instead of written directly.
+ *
+ * Same checks as a direct write: no partial row — if any split name doesn't
+ * resolve to a member column, nothing is staged and the unresolved names are
+ * returned so the admin can fix them. The row is padded to the debt sheet's full
+ * header width so every staged row is uniform and pastes cleanly into the right
+ * columns. Dry-run (no SA creds, or no Reimbursements sheet) logs instead.
  */
-export async function appendApprovedExpenseToDebtSheet(
+export async function stageApprovedExpenseRow(
   input: ExpenseWriteInput,
 ): Promise<ExpenseWriteResult> {
   if (!isSheetsConfigured()) {
-    console.warn('[reimburse] debt sheet not configured — dry run. Would write expense row:', input);
+    console.warn('[reimburse] sheets not configured — dry run. Would stage expense row:', input);
     return { dryRun: true, unresolved: [], written: false };
   }
+  // Read the debt sheet (READ-ONLY) to resolve each split name to a member column.
   const rows = await fetchCreditRows();
   if (rows.length === 0) {
-    // Credit sheet configured but empty — treat every name as unresolved so a
-    // real misconfiguration surfaces instead of silently approving.
+    // Debt sheet configured but empty — treat every name as unresolved so a real
+    // misconfiguration (or missing read access) surfaces instead of silently
+    // approving with no columns to align against.
     return { dryRun: false, unresolved: input.split.map((s) => s.name), written: false };
   }
   const { resolved, unresolved } = resolveMemberColumns(rows, input.split.map((s) => s.name));
   if (unresolved.length > 0) return { dryRun: false, unresolved, written: false };
 
-  const label = expenseRowLabel(input.id, input.expenseDate, input.description);
-  let maxCol = 0;
-  for (const r of resolved) maxCol = Math.max(maxCol, r.col);
-  const rowArr: (string | number)[] = new Array(maxCol + 1).fill('');
+  const label = input.description;
+  // Pad to the debt sheet's full header width so the row aligns column-for-column
+  // when pasted, regardless of which members are in the split.
+  const width = rows[0].length;
+  const rowArr: (string | number)[] = new Array(Math.max(width, 1)).fill('');
   rowArr[0] = label;
   for (const r of resolved) {
     const share = input.split.find((s) => s.name === r.name);
-    rowArr[r.col] = share ? share.amount : 0;
+    rowArr[r.col] = share ? share.weight : 0;
   }
 
-  const creditSheetId = env('CREDIT_SHEET_SPREADSHEET_ID');
-  const tab = env('CREDIT_SHEET_TAB');
-  const appendRange = tab ? `${tab}!A:A` : 'A:A';
+  if (!isReimburseConfigured()) {
+    console.warn('[reimburse] reimburse sheet not configured — dry run. Would stage row:', rowArr);
+    return { dryRun: true, unresolved: [], written: false };
+  }
   const sheets = getClient();
   await sheets.spreadsheets.values.append({
-    spreadsheetId: creditSheetId,
-    range: appendRange,
+    spreadsheetId: REIMBURSE_SPREADSHEET_ID,
+    range: `${DEBT_TAB}!A:A`,
     valueInputOption: 'RAW',
     insertDataOption: 'INSERT_ROWS',
     requestBody: { values: [rowArr] },
   });
-  console.log('[reimburse] wrote debt-sheet expense row:', label);
+  console.log('[reimburse] staged debt-sheet row in', DEBT_TAB, ':', label);
   return { dryRun: false, unresolved: [], written: true };
+}
+
+/**
+ * Edit URL of the Reimbursements spreadsheet (where the staging tab lives), for
+ * the admin "open sheet" link so vorstand can reach the staged rows to paste.
+ * Empty string when the sheet isn't configured.
+ */
+export function reimburseSheetUrl(): string {
+  return REIMBURSE_SPREADSHEET_ID
+    ? `https://docs.google.com/spreadsheets/d/${REIMBURSE_SPREADSHEET_ID}/edit`
+    : '';
+}
+
+/** Name of the staging tab (REIMBURSE_DEBT_TAB) for the admin "paste the row" note. */
+export function reimburseDebtTabName(): string {
+  return DEBT_TAB;
 }
 
 // --- Drive receipt upload ---------------------------------------------------
@@ -380,7 +414,7 @@ export async function uploadReceiptToDrive(
     console.warn('[reimburse] not configured — dry run. Would upload receipt:', file.name);
     return { dryRun: true };
   }
-  const name = sanitizeFileName(`${meta.expenseDate} ${meta.submitterName} ${meta.id} ${file.name}`)
+  const name = sanitizeFileName(`${meta.id} ${file.name}`)
     || `${meta.id}${extFor(file.name)}`;
   const buf = Buffer.from(file.buffer);
   const stream = new Readable();

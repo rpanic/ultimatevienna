@@ -46,13 +46,3 @@ export function splitByWeights(total: number, entries: SplitEntry[]): SplitShare
   }
   return result;
 }
-
-/**
- * Build the column-A label for an approved expense row in the debt sheet:
- * "<ISO date> <description> (#<ID>)". Date is trimmed to YYYY-MM-DD. Pure.
- */
-export function expenseRowLabel(id: string, isoDate: string, description: string): string {
-  const date = (isoDate ?? '').slice(0, 10).trim();
-  const desc = (description ?? '').trim();
-  return `${date} ${desc} (#${id})`.replace(/\s+/g, ' ').trim();
-}

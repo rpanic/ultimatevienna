@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { sendEmail } from '../../../lib/email';
 import {
   listReimbursements,
-  appendApprovedExpenseToDebtSheet,
+  stageApprovedExpenseRow,
   updateReimburseStatus,
 } from '../../../lib/reimbursement/reimburse';
 
@@ -46,9 +46,11 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       if (record.status !== 'submitted') {
         return errorPage('Cannot approve', `Reimbursement ${id} is already ${record.status}.`);
       }
-      // Write the split into the debt sheet first. If any split name doesn't
-      // resolve to a member column, block — never write a partial row.
-      const write = await appendApprovedExpenseToDebtSheet({
+      // Stage the split as a ready-to-paste row in the Reimbursements sheet. If
+      // any split name doesn't resolve to a member column, block — never stage a
+      // partial row. The admin copies the staged row into the Guthaben sheet by
+      // hand (the service account can't write to the debt sheet).
+      const write = await stageApprovedExpenseRow({
         id,
         expenseDate: record.expenseDate,
         description: record.description,
@@ -60,13 +62,13 @@ export const POST: APIRoute = async ({ request, redirect }) => {
           'Could not approve',
           `These split names didn't match a column in the Guthaben list: ${names}. ` +
             `Correct the names (use them as they appear in the list) and try again. ` +
-            (write.dryRun ? '(Debt sheet not configured — dry run.' : '(Nothing was written to the debt sheet.'),
+            (write.dryRun ? '(Not configured — dry run.)' : '(Nothing was staged.)'),
         );
       }
       await updateReimburseStatus(id, { status: 'approved', approvedAt: new Date().toISOString() });
       await sendEmail(
         record.submitterEmail,
-        { text: `Your reimbursement request ${id} (${record.total.toLocaleString('de-DE')} € for "${record.description}") was approved and added to the Guthaben list. You'll be reimbursed once it's paid — we'll email you again then.` },
+        { text: `Your reimbursement request ${id} (${record.total.toLocaleString('de-DE')} € for "${record.description}") was approved and will be added to the Guthaben list. You'll be reimbursed once it's paid — we'll email you again then.` },
         'Ultimate Vienna — reimbursement approved',
       );
     } else if (action === 'pay') {

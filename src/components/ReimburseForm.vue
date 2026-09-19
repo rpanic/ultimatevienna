@@ -317,20 +317,21 @@ function fmt(n: number): string {
     </div>
 
     <label class="flex items-start gap-3 cursor-pointer">
-      <input v-model="form.receiptToUvie" type="checkbox" class="mt-1 h-4 w-4 accent-[var(--color-accent)]" />
+      <input v-model="form.isReceipt" type="checkbox" class="mt-1 h-4 w-4 accent-[var(--color-accent)]" />
       <span class="text-[.9rem] text-text">
-        The receipt is made out to <strong>Ultimate Vienna</strong> as the recipient (not to me personally or another club).
+        <strong>This is a receipt</strong> (Rechnung/Quittung) - not a payment confirmation, bank statement, or order confirmation.
         <span class="text-primary">*</span>
       </span>
     </label>
 
     <label class="flex items-start gap-3 cursor-pointer">
-      <input v-model="form.isReceipt" type="checkbox" class="mt-1 h-4 w-4 accent-[var(--color-accent)]" />
-      <span class="text-[.9rem] text-text">
-        This is a receipt (Rechnung/Quittung) &mdash; not a payment confirmation, bank statement, or order confirmation.
+      <input v-model="form.receiptToUvie" type="checkbox" class="mt-1 h-4 w-4 accent-[var(--color-accent)]" />
+          <span class="text-[.9rem] text-text">
+        The receipt is made out to <strong>Ultimate Vienna</strong> as the recipient (not to me personally or another club).
         <span class="text-primary">*</span>
-      </span>
+        </span>
     </label>
+
 
     <label class="flex items-start gap-3 cursor-pointer">
       <input v-model="form.consent" type="checkbox" class="mt-1 h-4 w-4 accent-[var(--color-accent)]" />
